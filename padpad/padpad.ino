@@ -1,4 +1,6 @@
 #include <Adafruit_NeoPixel.h>
+#include <Keypad.h>
+#include <Keyboard.h>
 
 #include "config.h"
 
@@ -8,25 +10,40 @@ struct Message {
   String value;
 };
 
-Message incoming_message = { "", 0, "" };
+char* generateKeymap(byte row_count, byte col_count) {
+  int size = row_count * col_count;
+  char* keymap = new char[size];
+  char start = 1;  // 1(number) and not '1'(char)
+
+  for (int i = 0; i < size; i++)
+    keymap[i] = start + i;
+
+  return keymap;
+}
 
 Adafruit_NeoPixel led(1, LED_PIN);
+Keypad buttons = Keypad(makeKeymap(generateKeymap(ROWS, COLS)), ROW_PINS, COL_PINS, ROWS, COLS);
 
 bool paired = false;
 bool led_overridden = false;
 
+Message incoming_message = { "", 0, "" };
+
 void setup() {
   Serial.begin(BAUD_RATE);
 
-  // Inputs
+  Keyboard.begin();
+  buttons.setDebounceTime(10);
 
-  // Outputs
   led.begin();
   led.setBrightness(30);
   ledSetColor(0, 0, 0);
 }
 
 void loop() {
+  while (DEBUG_BUTTONS)
+    handleButtons();
+
   while (!paired) {
     if (Serial.available()) {
       String message = Serial.readString();
@@ -115,4 +132,26 @@ void ledFlash(int count, int duration, int color[3]) {
     ledSetColor(0, 0, 0);
     delay(duration / 2);
   }
+}
+
+void handleButtons() {
+  if (buttons.getKeys())
+    for (int i = 0; i < LIST_MAX; i++)
+      if (buttons.key[i].stateChanged) {
+        byte id = buttons.key[i].kchar;
+
+        switch (buttons.key[i].kstate) {
+          case PRESSED:
+            Keyboard.press(96 + id);
+            serialSend((String)id, "PRESSED");
+
+            break;
+
+          case RELEASED:
+            Keyboard.release(96 + id);
+            serialSend((String)id, "RELEASED");
+
+            break;
+        }
+      }
 }
