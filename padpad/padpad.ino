@@ -44,14 +44,14 @@ void loop() {
   while (DEBUG_BUTTONS)
     handleButtons();
 
-  while (!paired) {
+  if (!paired) {
     if (Serial.available()) {
       String message = Serial.readString();
 
       if (message == "p1") {
         pair();
 
-        break;
+        return;
       }
     }
 
@@ -62,6 +62,8 @@ void loop() {
     delay(1000);
 
     ledSetColor(0, 0, 0);
+
+    return;
   }
 
   if (paired) {
@@ -90,6 +92,8 @@ void loop() {
         break;
     }
   }
+
+  handleButtons();
 }
 
 void serialSend(String key, String value) {
@@ -142,14 +146,14 @@ void handleButtons() {
 
         switch (buttons.key[i].kstate) {
           case PRESSED:
-            Keyboard.press(96 + id);
-            serialSend((String)id, "PRESSED");
+            // Keyboard.press(96 + id);
+            serialSend("b" + (String)id, "PRESSED");
 
             break;
 
           case RELEASED:
-            Keyboard.release(96 + id);
-            serialSend((String)id, "RELEASED");
+            // Keyboard.release(96 + id);
+            serialSend("b" + (String)id, "RELEASED");
 
             break;
         }

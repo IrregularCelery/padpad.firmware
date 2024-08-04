@@ -19,4 +19,4 @@ const byte COL_PINS[COLS] = { 5, 6, 7, 8, 9 };
 #define DEBOUNCE_TIME 10
 
 // Debugging
-#define DEBUG_BUTTONS true
+#define DEBUG_BUTTONS false
