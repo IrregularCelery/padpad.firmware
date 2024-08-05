@@ -14,6 +14,9 @@ Message incoming_message = { "", 0, "" };
 bool should_skip = false;
 bool paired = false;
 bool led_overridden = false;
+#if !MODKEY_DISABLED
+bool modkey = false;
+#endif
 
 void setup() {
   Serial.begin(BAUD_RATE);
@@ -32,7 +35,7 @@ void loop() {
 
   pairCheck();
 
-  // pairCheck() decides if the rest of the code should get ignored or not
+  // pairCheck() decides if the rest of the code should be ignored or not
   if (should_skip)
     return;
 
@@ -141,19 +144,54 @@ void handleButtons() {
   if (buttons.getKeys())
     for (int i = 0; i < LIST_MAX; i++)
       if (buttons.key[i].stateChanged) {
-        byte id = buttons.key[i].kchar;
+        byte id = buttons.key[i].kcode;
+        byte map_id = buttons.key[i].kchar;
 
+        byte key = layout[id].key;
+        byte key_orig = key;
+        byte mod = layout[id].mod;
+
+#if !MODKEY_DISABLED
+        if (modkey && key != 255)
+          key = mod;
+#endif
 
         switch (buttons.key[i].kstate) {
           case PRESSED:
-            // Keyboard.press(96 + id);
-            serialSend("b" + (String)id, "PRESSED");
+#if !MODKEY_DISABLED
+            // character 255 = modkey
+            if (key == 255)
+              modkey = true;
+            else
+#endif
+              Keyboard.press(key);
+
+            if (paired)
+              serialSendButton(map_id, modkey, 1);
 
             break;
 
           case RELEASED:
-            // Keyboard.release(96 + id);
-            serialSend("b" + (String)id, "RELEASED");
+#if !MODKEY_DISABLED
+            // character 255 = modkey
+            if (key == 255)
+              modkey = false;
+            else
+#endif
+            {
+              Keyboard.release(key);
+
+              // There was a bug that if release the button before the modkey,
+              // because the modkey is still enabled, the `key` would change
+              // to `mod` and thus wouldn't be released here.
+              Keyboard.release(key_orig);
+            }
+
+            if (mod > 0)
+              Keyboard.release(mod);
+
+            if (paired)
+              serialSendButton(map_id, modkey, 0);
 
             break;
         }

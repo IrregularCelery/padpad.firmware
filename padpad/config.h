@@ -8,6 +8,11 @@
 
 /*--------------------------- Buttons settings ---------------------------*/
 
+struct Layout {
+  byte key;
+  byte mod;
+};
+
 // Even though the buttons keymap is basically just a stream of numbers,
 // to be able to have more button with less pins, we create a matrix
 #define ROWS 3
@@ -16,6 +21,13 @@
 // Pins of the button matrix
 const byte ROW_PINS[ROWS] = { 2, 3, 4 };
 const byte COL_PINS[COLS] = { 5, 6, 7, 8, 9 };
+
+// Default buttons layout. WOULD BE IGNORED IF THE EEPROM ISN'T EMPTY
+Layout layout[ROWS * COLS] = {
+  { 0, 'o' },  { 'b', 'p' },  { 'c', 'q' },  { 'd', 'r' },  { 'e', 's' },
+  { 'f', 't' },  { 'g', 'u' },  { 'h', 'v' },  { 'i', 'w' },  { 'j', 'x' },
+  { 'k', 'y' },  { 'l', 'z' },  { 'm', '0' },  { 'n', '1' },  { 255, 0 },
+};
 
 /*--------------------------- Modkey settings ---------------------------*/
 
