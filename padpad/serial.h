@@ -6,6 +6,7 @@ struct Message {
 
 void serialSend(String key, String value) {
   Serial.print(key + MESSAGE_SEP + value + MESSAGE_END);
+  Serial.flush();
 }
 
 // Button states: 0 => RELEASE, 1 => PRESSED, 2 => HOLD

@@ -1,32 +1,43 @@
+#include <TinyUSB_Mouse_and_Keyboard.h>
 #include <Adafruit_NeoPixel.h>
-#include <Keypad.h>
-#include <Keyboard.h>
+#include <Adafruit_Keypad.h>
 
 #include "config.h"
 #include "serial.h"
 #include "helpers.h"
 
+#if !LED_DISABLED
 Adafruit_NeoPixel led(1, LED_PIN);
-Keypad buttons = Keypad(makeKeymap(generateKeymap(ROWS, COLS)), ROW_PINS, COL_PINS, ROWS, COLS);
+#endif
+Adafruit_Keypad buttons = Adafruit_Keypad(makeKeymap(generateKeymap(ROWS, COLS)), ROW_PINS, COL_PINS, ROWS, COLS);
 
 Message incoming_message = { "", 0, "" };
 
 bool should_skip = false;
 bool paired = false;
+#if !LED_DISABLED
 bool led_overridden = false;
+#endif
 #if !MODKEY_DISABLED
 bool modkey = false;
 #endif
 
+unsigned long buttonTimer = 0;
+
 void setup() {
-  Serial.begin(BAUD_RATE);
+  TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
+  TinyUSBDevice.setManufacturerDescriptor(DEVICE_MANUFACTURER);
 
   Keyboard.begin();
-  buttons.setDebounceTime(10);
+  buttons.begin();
 
+#if !LED_DISABLED
   led.begin();
   led.setBrightness(30);
   ledSetColor(0, 0, 0);
+#endif
+
+  Serial.begin(BAUD_RATE);
 }
 
 void loop() {
@@ -95,14 +106,17 @@ void pairCheck() {
       return;
     }
 
+#if !LED_DISABLED
     if (!led_overridden)
       ledSetColor(0, 255, 0);
+#endif
 
     should_skip = false;
   }
 }
 
 void ledSetColor(int r, int g, int b) {
+#if !LED_DISABLED
   if (r != 0 || g != 0 || b != 0)
     led_overridden = true;
   else
@@ -110,16 +124,19 @@ void ledSetColor(int r, int g, int b) {
 
   led.setPixelColor(0, led.Color(r, g, b));
   led.show();
+#endif
 }
 
 // Duration: delay between each on and off so `delay(duration / 2)`
 void ledFlash(int count, int duration, int color[3]) {
+#if !LED_DISABLED
   for (int i = 0; i < count; i++) {
     ledSetColor(color[0], color[1], color[2]);
     delay(duration / 2);
     ledSetColor(0, 0, 0);
     delay(duration / 2);
   }
+#endif
 }
 
 void handleMessages() {
@@ -141,59 +158,66 @@ void handleMessages() {
 }
 
 void handleButtons() {
-  if (buttons.getKeys())
-    for (int i = 0; i < LIST_MAX; i++)
-      if (buttons.key[i].stateChanged) {
-        byte id = buttons.key[i].kcode;
-        byte map_id = buttons.key[i].kchar;
+  if ((millis() - buttonTimer) < DEBOUNCE_TIME)
+    return;
 
-        byte key = layout[id].key;
-        byte key_orig = key;
-        byte mod = layout[id].mod;
+  buttonTimer = millis();
+
+  buttons.tick();
+
+  if (buttons.available()) {
+    keypadEvent e = buttons.read();
+
+    byte id = e.bit.KEY - 1;
+    byte map_id = e.bit.KEY;
+
+    byte key = layout[id].key;
+    byte key_orig = key;
+    byte mod = layout[id].mod;
 
 #if !MODKEY_DISABLED
-        if (modkey && key != 255)
-          key = mod;
+    if (modkey && key != 255)
+      key = mod;
 #endif
 
-        switch (buttons.key[i].kstate) {
-          case PRESSED:
+    switch (e.bit.EVENT) {
+      case KEY_JUST_PRESSED:
 #if !MODKEY_DISABLED
-            // character 255 = modkey
-            if (key == 255)
-              modkey = true;
-            else
+        // character 255 = modkey
+        if (key == 255)
+          modkey = true;
+        else
 #endif
-              Keyboard.press(key);
+          Keyboard.press(key);
 
-            if (paired)
-              serialSendButton(map_id, modkey, 1);
+        if (paired)
+          serialSendButton(map_id, modkey, 1);
 
-            break;
+        break;
 
-          case RELEASED:
+      case KEY_JUST_RELEASED:
 #if !MODKEY_DISABLED
-            // character 255 = modkey
-            if (key == 255)
-              modkey = false;
-            else
+        // character 255 = modkey
+        if (key == 255)
+          modkey = false;
+        else
 #endif
-            {
-              Keyboard.release(key);
+        {
+          Keyboard.release(key);
 
-              // There was a bug that if release the button before the modkey,
-              // because the modkey is still enabled, the `key` would change
-              // to `mod` and thus wouldn't be released here.
-              Keyboard.release(key_orig);
-            }
-
-            if (mod > 0)
-              Keyboard.release(mod);
-
-            if (paired)
-              serialSendButton(map_id, modkey, 0);
-
-            break;
+          // There was a bug that if release the button before the modkey,
+          // because the modkey is still enabled, the `key` would change
+          // to `mod` and thus wouldn't be released here.
+          Keyboard.release(key_orig);
         }
-      }
+
+        if (mod > 0)
+          Keyboard.release(mod);
+
+        if (paired)
+          serialSendButton(map_id, modkey, 0);
+
+        break;
+    }
+  }
 }

@@ -1,10 +1,34 @@
+/*--------------------------- General settings ---------------------------*/
+
+#define DEVICE_NAME "PadPad"
+#define DEVICE_MANUFACTURER "Irregular Celery"
+
+// You can disable any of these features if you don't need them
+#define LED_DISABLED true  // NOT RECOMENDED : you wouldn't be able to \
+                                                  // see the current state of the program if you \
+                                                  // disable this feature. \
+                                                  // e.g. PAIRING, CONNECTING, DISCONNECING, etc.
+#define JOYSTICK_DISABLED false
+#define ROTARY_ENCODER_DISABLED false
+
+/*---------------------------- Pins settings -----------------------------*/
+
+// WS2812B module
+#if !LED_DISABLED
 #define LED_PIN 10
+#endif
 
-/*--------------------------- Serial settings ---------------------------*/
+#if !JOYSTICK_DISABLED
+#define JOYSTICK_PIN_X 8
+#define JOYSTICK_PIN_Y 9
+#endif
 
-#define BAUD_RATE 38400
-#define MESSAGE_SEP ":"
-#define MESSAGE_END ";"
+#if !ROTARY_ENCODER_DISABLED
+#define ROTARY_ENCODER_PIN1 11
+#define ROTARY_ENCODER_PIN2 12
+#define ROTARY_ENCODER_BUTTON 13
+#endif
+
 
 /*--------------------------- Buttons settings ---------------------------*/
 
@@ -19,8 +43,8 @@ struct Layout {
 #define COLS 5
 
 // Pins of the button matrix
-const byte ROW_PINS[ROWS] = { 2, 3, 4 };
-const byte COL_PINS[COLS] = { 5, 6, 7, 8, 9 };
+byte ROW_PINS[ROWS] = { 0, 1, 2 };
+byte COL_PINS[COLS] = { 3, 4, 5, 6, 7 };
 
 // Default buttons layout. WOULD BE IGNORED IF THE EEPROM ISN'T EMPTY
 Layout layout[ROWS * COLS] = {
@@ -29,7 +53,15 @@ Layout layout[ROWS * COLS] = {
   { 'k', 'y' },  { 'l', 'z' },  { 'm', '0' },  { 'n', '1' },  { 255, 0 },
 };
 
-/*--------------------------- Modkey settings ---------------------------*/
+#define DEBOUNCE_TIME 10
+
+/*---------------------------- Serial settings ----------------------------*/
+
+#define BAUD_RATE 38400
+#define MESSAGE_SEP ":"
+#define MESSAGE_END ";"
+
+/*---------------------------- Modkey settings ---------------------------*/
 
 // you can set one of your buttons to act as a key modifier, which means
 // for example if you set a button as the letter "A", now if you hold the modkey
@@ -39,11 +71,7 @@ Layout layout[ROWS * COLS] = {
 // check out the software: https://github.com/IrregularCelery/padpad.software
 #define MODKEY_DISABLED false
 
-/*--------------------------- General settings ---------------------------*/
-
-#define DEBOUNCE_TIME 10
-
-/*--------------------------- Debug settings ---------------------------*/
+/*----------------------------- Debug settings ---------------------------*/
 
 // Make sure to set this to false, this is only for testing the buttons and getting
 // their IDs and stuff, if this is true, the rest of the functionalities are disabled!
