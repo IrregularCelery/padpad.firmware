@@ -4,7 +4,7 @@
 #define DEVICE_MANUFACTURER "Irregular Celery"
 
 // You can disable any of these features if you don't need them
-#define LED_DISABLED true  // NOT RECOMENDED : you wouldn't be able to \
+#define LED_DISABLED false  // NOT RECOMENDED : you wouldn't be able to \
                                                   // see the current state of the program if you \
                                                   // disable this feature. \
                                                   // e.g. PAIRING, CONNECTING, DISCONNECING, etc.

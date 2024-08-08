@@ -18,9 +18,7 @@ bool paired = false;
 #if !LED_DISABLED
 bool led_overridden = false;
 #endif
-#if !MODKEY_DISABLED
 bool modkey = false;
-#endif
 
 unsigned long buttonTimer = 0;
 
