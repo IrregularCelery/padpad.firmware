@@ -20,8 +20,6 @@ bool led_overridden = false;
 #endif
 bool modkey = false;
 
-unsigned long buttonTimer = 0;
-
 void setup() {
   TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
   TinyUSBDevice.setManufacturerDescriptor(DEVICE_MANUFACTURER);
@@ -86,9 +84,13 @@ void pairCheck() {
 
     ledSetColor(0, 0, 255);
 
-    serialSend("READY", "Firmware is ready to pair with the app!");
+    static unsigned long pairingTimer = 0;
 
-    delay(1000);
+    if ((millis() - pairingTimer) >= 1000) {
+      serialSend("READY", "Firmware is ready to pair with the app!");
+
+      pairingTimer = millis();
+    }
 
     should_skip = true;
 
@@ -156,6 +158,8 @@ void handleMessages() {
 }
 
 void handleButtons() {
+  static unsigned long buttonTimer = 0;
+
   if ((millis() - buttonTimer) < DEBOUNCE_TIME)
     return;
 
