@@ -4,7 +4,7 @@
 #define DEVICE_MANUFACTURER "Irregular Celery"
 
 // You can disable any of these features if you don't need them
-#define LED_DISABLED false  // NOT RECOMENDED : you wouldn't be able to \
+#define LED_DISABLED false  // NOT RECOMMENDED : you wouldn't be able to \
                                                   // see the current state of the program if you \
                                                   // disable this feature. \
                                                   // e.g. PAIRING, CONNECTING, DISCONNECING, etc.
@@ -29,7 +29,6 @@
 #define ROTARY_ENCODER_BUTTON 13
 #endif
 
-
 /*--------------------------- Buttons settings ---------------------------*/
 
 struct Layout {
@@ -47,6 +46,8 @@ byte ROW_PINS[ROWS] = { 0, 1, 2 };
 byte COL_PINS[COLS] = { 3, 4, 5, 6, 7 };
 
 // Default buttons layout. WOULD BE IGNORED IF THE EEPROM ISN'T EMPTY
+// Number 255 and 0 are reserved. 255 for modkey and 0 for nothing.
+// Keep in mind 0 and '0' are different! 0 is NULL and '0' is character '0' which is number 48
 Layout layout[ROWS * COLS] = {
   { 0, 'o' },  { 'b', 'p' },  { 'c', 'q' },  { 'd', 'r' },  { 'e', 's' },
   { 'f', 't' },  { 'g', 'u' },  { 'h', 'v' },  { 'i', 'w' },  { 'j', 'x' },
@@ -66,7 +67,7 @@ Layout layout[ROWS * COLS] = {
 // you can set one of your buttons to act as a key modifier, which means
 // for example if you set a button as the letter "A", now if you hold the modkey
 // it should be some other thing that you've set in the program.
-// NOTE: any key with the character `255` asigned to, is the modkey.
+// NOTE: any key with the character `255` assigned to, is the modkey.
 // You can change your keys and their asinged letter from the application
 // check out the software: https://github.com/IrregularCelery/padpad.software
 #define MODKEY_DISABLED false
