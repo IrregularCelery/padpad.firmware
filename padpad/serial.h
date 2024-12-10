@@ -9,7 +9,7 @@ void serialSend(String key, String value) {
   Serial.flush();
 }
 
-// Button states: 0 => RELEASE, 1 => PRESSED, 2 => HOLD
+// Button states: 0 => RELEASE, 1 => PRESSED, 2 => HOLD (HOLD not implemented)
 void serialSendButton(byte id, bool modkey, byte state) {
   String modkey_state = "m";
 
