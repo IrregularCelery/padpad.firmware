@@ -18,3 +18,8 @@ void serialSendButton(byte id, bool modkey, byte state) {
 
   serialSend("b" + modkey_state + (String)id, (String)state);
 }
+
+// Potentiometer value is mapped to be 100 steps between 0 and 99
+void serialSendPotentiometer(byte id, byte value) {
+  serialSend("p" + (String)id, (String)value);
+}
