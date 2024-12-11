@@ -10,31 +10,44 @@ char* generateKeymap(byte row_count, byte col_count) {
 }
 
 int analogStepRead(int pin, int* last_step) {
-  const int steps_count = 32;
-  const int tolerance = 20;
-  const int resolution = 1024;
+  const float resolution = 1024;
+  const float steps_count = 100;
+  const float tolerance = 16;
 
-  int value = analogRead(pin);
-  
+  float value = analogRead(pin);
+
   // If last_step hasn't been initialized, start in the middle
   if (*last_step < 0 || *last_step >= steps_count) {
     *last_step = steps_count / 2;
   }
-  
+
   // Create hysteresis boundaries
-  int step_size = resolution / steps_count;
-  int lower_bound = (*last_step * step_size) - (tolerance / 2);
-  int upper_bound = (*last_step * step_size) + step_size + (tolerance / 2);
+  float step_size = resolution / steps_count;
+  float lower_bound = (*last_step * step_size) - (tolerance / 2);
+  float upper_bound = (*last_step * step_size) + step_size + (tolerance / 2);
 
   // Calculate the current potential step
-  int current_step = value / step_size;
-  
+  float current_step = value / step_size;
+
   // If the current value is within the hysteresis zone, keep the last step
   if (value >= lower_bound && value <= upper_bound) {
     return *last_step;
   }
-  
+
   *last_step = current_step;
 
   return current_step;
 }
+
+#if !ANALOG_MULTIPLEXER_DISABLED
+// Function to select a specific channel on the multiplexer ICs, Here we use CD4051BE
+void selectChannel(int channel) {
+  // Ensure the channel is within valid range (0-7)
+  channel = constrain(channel, 0, 7);
+
+  // Set the select pins based on the binary representation of the channel
+  for (int i = 0; i < 3 /* 3 bits = 8 channels */; i++) {
+    digitalWrite(selector_pins[i], bitRead(channel, i));
+  }
+}
+#endif
