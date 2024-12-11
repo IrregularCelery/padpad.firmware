@@ -136,4 +136,4 @@ Layout layout[ROWS * COLS] = {
 
 // This is only for testing the potentiometers and getting their values,
 // if this is true, the rest of the functionalities are disabled!
-#define DEBUG_POTENTIOMETERS true
+#define DEBUG_POTENTIOMETERS false
