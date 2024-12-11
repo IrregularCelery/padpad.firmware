@@ -25,5 +25,5 @@ void serialSendPotentiometer(byte id, byte value) {
   // inside the software wouldn't get too complecated.
   String modkey = "-";
 
-  serialSend("p" + modkey + (String)id, (String)value);
+  serialSend("p" + modkey + (String)(id + 1), (String)value);
 }
