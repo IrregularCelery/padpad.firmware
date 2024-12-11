@@ -33,12 +33,34 @@ void setup() {
   ledSetColor(0, 0, 0);
 #endif
 
+#if !POTENTIOMETERS_DISABLED
+  // Explicitly set the analog resolution
+  analogReadResolution(10);
+
+  // Initially, we set all the members to -1 for the logic of analogStepRead()
+  for (int i = 0; i < potentiometers_count; i++) {
+    last_potentiometer_values[i] = -1;
+  }
+#endif
+
+#if !ANALOG_MULTIPLEXER_DISABLED
+  // Configure selector pins of the analog multiplexer as outputs
+  for (int i = 0; i < 3 /* 3 bits = 8 channels */; i++) {
+    pinMode(selector_pins[i], OUTPUT);
+  }
+#endif
+
   Serial.begin(BAUD_RATE);
 }
 
 void loop() {
+  // ------- DEBUGGING ------- //
   while (DEBUG_BUTTONS)
     handleButtons();
+
+  while (DEBUG_POTENTIOMETERS)
+    handlePotentiometers();
+  // ----- END DEBUGGING ----- //
 
   pairCheck();
 
@@ -48,6 +70,7 @@ void loop() {
 
   handleMessages();
   handleButtons();
+  handlePotentiometers();
 }
 
 void pair() {
@@ -222,4 +245,33 @@ void handleButtons() {
         break;
     }
   }
+}
+
+void handlePotentiometers() {
+#if !POTENTIOMETERS_DISABLED
+  for (int i = 0; i < potentiometers_count; i++) {
+
+#if !ANALOG_MULTIPLEXER_DISABLED
+    // Select the channel
+    selectChannel(i);
+
+    int analog_pin = multiplexer_analog_common;
+#else
+    int analog_pin = potentiometer_pins[i];
+#endif
+
+    // Read the analog value from the selected channel
+    int value = analogStepRead(analog_pin, &last_potentiometer_values[i]);
+
+    Serial.print(" - Channel ");
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.print(value);
+    Serial.print(" - ");
+    Serial.print(analogRead(analog_pin));
+    Serial.print(" ; ");
+  }
+
+  Serial.println();
+#endif
 }
