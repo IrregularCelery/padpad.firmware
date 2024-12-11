@@ -60,10 +60,10 @@ const int potentiometers_count = sizeof(potentiometer_pins) / sizeof(potentiomet
 
 #endif
 
-int potentiometer_values[potentiometers_count] = { 0 };
-int last_potentiometer_values[potentiometers_count] = { -1 };
+int potentiometer_values[potentiometers_count] = {};
+int last_potentiometer_values[potentiometers_count] = {};
 
-#else // POTENTIOMETERS_DISABLED
+#else  // POTENTIOMETERS_DISABLED
 #define ANALOG_MULTIPLEXER_DISABLED true
 
 #endif
