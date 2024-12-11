@@ -263,15 +263,11 @@ void handlePotentiometers() {
     // Read the analog value from the selected channel
     int value = analogStepRead(analog_pin, &last_potentiometer_values[i]);
 
-    Serial.print(" - Channel ");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print(value);
-    Serial.print(" - ");
-    Serial.print(analogRead(analog_pin));
-    Serial.print(" ; ");
-  }
+    if (value != potentiometer_values[i]) {
+      potentiometer_values[i] = value;
 
-  Serial.println();
+      serialSendPotentiometer(i, value);
+    }
+  }
 #endif
 }
