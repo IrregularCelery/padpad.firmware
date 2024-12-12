@@ -137,4 +137,4 @@ Layout layout[ROWS * COLS] = {
 
 // This is only for testing the rotary encoder and getting its values,
 // if this is true, the rest of the functionalities are disabled!
-#define DEBUG_ROTARY_ENCODER true
+#define DEBUG_ROTARY_ENCODER false
