@@ -20,6 +20,11 @@ bool led_overridden = false;
 #endif
 bool modkey = false;
 
+#if !POTENTIOMETERS_DISABLED
+int potentiometer_values[potentiometers_count] = {};
+int last_potentiometer_values[potentiometers_count] = {};
+#endif
+
 void setup() {
   TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
   TinyUSBDevice.setManufacturerDescriptor(DEVICE_MANUFACTURER);
@@ -50,16 +55,35 @@ void setup() {
   }
 #endif
 
+#if !ROTARY_ENCODER_DISABLED
+  // Setup the input pins (need to be pulled up with resistors)
+  pinMode(ROTARY_ENCODER_PIN1, INPUT);
+  pinMode(ROTARY_ENCODER_PIN2, INPUT);
+
+  // Attach both rotary encoder pins to an interrupt pin
+  attachInterrupt(digitalPinToInterrupt(ROTARY_ENCODER_PIN1), rotaryEncoderMove, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ROTARY_ENCODER_PIN2), rotaryEncoderMove, CHANGE);
+#endif
+
   Serial.begin(BAUD_RATE);
 }
 
 void loop() {
   // ------- DEBUGGING ------- //
-  while (DEBUG_BUTTONS)
+  while (DEBUG_BUTTONS) {
     handleButtons();
+  }
 
-  while (DEBUG_POTENTIOMETERS)
+  while (DEBUG_POTENTIOMETERS) {
     handlePotentiometers();
+  }
+
+  while (DEBUG_ROTARY_ENCODER) {
+    handleRotaryEncoder();
+
+    yield();
+  }
+
   // ----- END DEBUGGING ----- //
 
   pairCheck();
@@ -70,7 +94,13 @@ void loop() {
 
   handleMessages();
   handleButtons();
+#if !POTENTIOMETERS_DISABLED
   handlePotentiometers();
+#endif
+
+#if !ROTARY_ENCODER_DISABLED
+  handleRotaryEncoder();
+#endif
 }
 
 void pair() {
@@ -267,6 +297,33 @@ void handlePotentiometers() {
       potentiometer_values[i] = value;
 
       serialSendPotentiometer(i, value);
+    }
+  }
+#endif
+}
+
+void handleRotaryEncoder() {
+#if !ROTARY_ENCODER_DISABLED
+  static int encoder_test = 0;
+
+  if (rotaryEncoderMoved()) {
+    int8_t rotation_value = rotaryEncoderRead();
+
+    // If valid movement, do something
+    if (rotation_value != 0) {
+      // Set any variable value as the rotary encoder position change
+      encoder_test += rotation_value;
+
+      // Check rotary encoder direction
+      if (rotation_value < 1) {
+        Serial.println("counterclockwise");
+      } else {
+        Serial.println("clockwise");
+      }
+
+      Serial.print(encoder_test);
+      Serial.print("\t");
+      Serial.println(rotation_value);
     }
   }
 #endif
