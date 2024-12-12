@@ -27,6 +27,7 @@
 #endif
 
 #if !ROTARY_ENCODER_DISABLED
+// If the rotation was inverse, switch PIN1 and PIN2 (CLK OR DT)
 #define ROTARY_ENCODER_PIN1 11
 #define ROTARY_ENCODER_PIN2 12
 #define ROTARY_ENCODER_BUTTON 13
@@ -139,3 +140,7 @@ Layout layout[ROWS * COLS] = {
 // This is only for testing the potentiometers and getting their values,
 // if this is true, the rest of the functionalities are disabled!
 #define DEBUG_POTENTIOMETERS false
+
+// This is only for testing the rotary encoder and getting its values,
+// if this is true, the rest of the functionalities are disabled!
+#define DEBUG_ROTARY_ENCODER true
