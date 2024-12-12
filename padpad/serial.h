@@ -1,3 +1,5 @@
+#pragma once
+
 struct Message {
   String message;
   byte key;

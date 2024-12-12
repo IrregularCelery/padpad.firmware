@@ -1,3 +1,5 @@
+#pragma once
+
 /*--------------------------- General settings ---------------------------*/
 
 #define DEVICE_NAME "PadPad"

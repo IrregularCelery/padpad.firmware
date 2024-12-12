@@ -1,3 +1,5 @@
+#pragma once
+
 char* generateKeymap(byte row_count, byte col_count) {
   int size = row_count * col_count;
   char* keymap = new char[size];
