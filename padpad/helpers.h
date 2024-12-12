@@ -42,6 +42,8 @@ int analogStepRead(int pin, int* last_step) {
   return current_step;
 }
 
+// ---------- Component related functions ---------- //
+
 #if !ANALOG_MULTIPLEXER_DISABLED
 // Function to select a specific channel on 8-bit multiplexer ICs, Here we use CD4051BE
 void selectChannel(int channel) {
