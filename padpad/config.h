@@ -60,15 +60,9 @@ const int multiplexer_analog_common = A0;
 // and set these pins. Here these pins are *ANALOG PINS*
 const int potentiometer_pins[] = { A0, A1, A2 };
 const int potentiometers_count = sizeof(potentiometer_pins) / sizeof(potentiometer_pins[0]);
-
 #endif
-
-int potentiometer_values[potentiometers_count] = {};
-int last_potentiometer_values[potentiometers_count] = {};
-
 #else  // POTENTIOMETERS_DISABLED
 #define ANALOG_MULTIPLEXER_DISABLED true
-
 #endif
 
 /*--------------------------- Buttons settings ---------------------------*/
