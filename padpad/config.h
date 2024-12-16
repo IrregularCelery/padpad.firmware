@@ -33,6 +33,26 @@
 #define ROTARY_ENCODER_BUTTON 13
 #endif
 
+/*--------------------------- Buttons settings ---------------------------*/
+
+struct Layout {
+  byte key;
+  byte mod;
+};
+
+// Even though the buttons keymap is basically just a stream of numbers,
+// to be able to have more button with less pins, we create a matrix
+#define ROWS 3
+#define COLS 5
+
+// Pins of the button matrix
+byte ROW_PINS[ROWS] = { 0, 1, 2 };
+byte COL_PINS[COLS] = { 3, 4, 5, 6, 7 };
+
+// Check out `buttons_layout` in `default_memory` for buttons default layout
+
+#define DEBOUNCE_TIME 10
+
 /*----------------------- Potentiometers settings -----------------------*/
 
 #if !POTENTIOMETERS_DISABLED
@@ -65,50 +85,52 @@ const int potentiometers_count = sizeof(potentiometer_pins) / sizeof(potentiomet
 #define ANALOG_MULTIPLEXER_DISABLED true
 #endif
 
-/*--------------------------- Buttons settings ---------------------------*/
+/*--------------------------- Memory settings ----------------------------*/
 
-struct Layout {
-  byte key;
-  byte mod;
+struct Memory {
+  uint16_t sector_check;
+
+  Layout buttons_layout[ROWS * COLS];
 };
 
-// Even though the buttons keymap is basically just a stream of numbers,
-// to be able to have more button with less pins, we create a matrix
-#define ROWS 3
-#define COLS 5
+#define FLASH_SIZE (2 * 1024 * 1024)                             // Flash size of the microcontroller e.g. RPI Pico: 2 MiB
+#define FLASH_END_OFFSET (FLASH_SIZE - (FLASH_SECTOR_SIZE * 2))  // Reserve the last sector of flash for saving memory
+#define SECTOR_CHECK 51690                                       // A *totally* random number to check if the config memory exists on the flash
 
-// Pins of the button matrix
-byte ROW_PINS[ROWS] = { 0, 1, 2 };
-byte COL_PINS[COLS] = { 3, 4, 5, 6, 7 };
+// Will only be used on code uploading, and/or the operation of reading
+// the flash was unsuccessful. WILL BE IGNORED IF CONFIG MEMORY ISN'T EMPTY!
+// Config memory can be changed/set from the software
+Memory default_memory = {
+  .sector_check = SECTOR_CHECK,
 
-// Default buttons layout. WOULD BE IGNORED IF THE EEPROM ISN'T EMPTY
-// Number 255 and 0 are reserved. 255 for modkey and 0 for nothing.
-// Keep in mind 0 and '0' are different! 0 is NULL and '0' is character '0' which is number 48
-Layout layout[ROWS * COLS] = {
-  { 0, 'o' },
-  { 'b', 'p' },
-  { 'c', 'q' },
-  { 'd', 'r' },
-  { 'e', 's' },
-  { 'f', 't' },
-  { 'g', 'u' },
-  { 'h', 'v' },
-  { 'i', 'w' },
-  { 'j', 'x' },
-  { 'k', 'y' },
-  { 'l', 'z' },
-  { 'm', '0' },
-  { 'n', '1' },
-  { 255, 0 },
+  // Buttons layout currently only keeps one letter to act as keyboard input
+  // Number 255 and 0 are reserved. 255 for modkey and 0 for nothing.
+  // Keep in mind 0 and '0' are different! 0 is NULL and '0' is character '0' which is number 48
+  .buttons_layout = {
+    { 0, 'o' },    // Button 1
+    { 'b', 'p' },  // Button 2
+    { 'c', 'q' },  // Button 3
+    { 'd', 'r' },  // ...
+    { 'e', 's' },
+    { 'f', 't' },
+    { 'g', 'u' },
+    { 'h', 'v' },
+    { 'i', 'w' },
+    { 'j', 'x' },
+    { 'k', 'y' },
+    { 'l', 'z' },  // ...
+    { 'm', '0' },  // Button 13
+    { 'n', '1' },  // Button 14
+    { 255, 0 },    // Button 15
+  }
 };
 
-#define DEBOUNCE_TIME 10
-
-/*---------------------------- Serial settings ----------------------------*/
+/*--------------------------- Serial settings ----------------------------*/
 
 #define BAUD_RATE 38400
 #define MESSAGE_SEP ":"
 #define MESSAGE_END ";"
+#define MESSAGE_SEP_INNER "|"
 
 /*---------------------------- Modkey settings ---------------------------*/
 
