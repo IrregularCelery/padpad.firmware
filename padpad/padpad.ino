@@ -92,6 +92,8 @@ void loop() {
 
   // ----- END DEBUGGING ----- //
 
+  handleButtons();
+
   pairCheck();
 
   // pairCheck() decides if the rest of the code should be ignored or not
@@ -99,7 +101,7 @@ void loop() {
     return;
 
   handleMessages();
-  handleButtons();
+
 #if !POTENTIOMETERS_DISABLED
   handlePotentiometers();
 #endif
