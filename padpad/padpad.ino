@@ -1,6 +1,7 @@
 #include <TinyUSB_Mouse_and_Keyboard.h>
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_Keypad.h>
+#include <hardware/flash.h>
 
 #include "config.h"
 #include "serial.h"
@@ -10,6 +11,8 @@
 Adafruit_NeoPixel led(1, LED_PIN);
 #endif
 Adafruit_Keypad buttons = Adafruit_Keypad(makeKeymap(generateKeymap(ROWS, COLS)), ROW_PINS, COL_PINS, ROWS, COLS);
+
+Memory memory;
 
 Message incoming_message = { "", 0, "" };
 
@@ -31,6 +34,9 @@ void setup() {
 
   Keyboard.begin();
   buttons.begin();
+
+  // Load configuration from flash
+  loadMemory();
 
 #if !LED_DISABLED
   led.begin();
@@ -101,6 +107,97 @@ void loop() {
 #if !ROTARY_ENCODER_DISABLED
   handleRotaryEncoder();
 #endif
+}
+
+
+// ------------- Config memory functions ------------ //
+
+void loadMemory() {
+  const uint8_t* flash = (const uint8_t*)(XIP_BASE + FLASH_END_OFFSET);
+
+  // Copy flash data into the config memory
+  memcpy(&memory, flash, sizeof(Memory));
+
+  // Validate config memory data by comparing the `sector_check`
+  if (memory.sector_check != SECTOR_CHECK) {
+    memory = default_memory;  // Set to default config memory
+
+    serialSend("MEMORY", "Could not retrieve config memory data! Using the defaults instead...");
+  }
+}
+
+// Microcontrollers have limited amount of write/erase cycles
+// e.g. RPI Pico that we use here has about ~10,000 cycles!
+void saveMemory() {
+  // Disable interrupts for flash operations
+  noInterrupts();
+
+  // Erase flash sector (required before writing)
+  flash_range_erase(FLASH_END_OFFSET, FLASH_SECTOR_SIZE);
+
+  // Write memory struct to flash
+  flash_range_program(FLASH_END_OFFSET, (uint8_t*)&memory, sizeof(Memory));
+
+  interrupts();  // Re-enable interrupts
+}
+
+// Accepted format: 1:97|98;2:99|100;3:101|102;4:103|104;5:105|106;...
+// ':' => separator | ';' => button config end
+// 1,2,3... = button id in keymap (Started from 1)
+// 97|98 => 97 = letter 'a' normal, b = letter 'b' modkey
+// letters are in ascii number. e.g. 97 = a
+void uploadMemoryToFlash(String memory_string) {
+  while (memory_string.length() > 0) {
+    int index = memory_string.indexOf(MESSAGE_END);
+
+    if (index == -1) {
+      // Couldn't find anymore `MESSAGE_END` character
+      index = memory_string.length();
+    }
+
+    String current = memory_string.substring(0, index);
+
+    int separator_position = current.indexOf(MESSAGE_SEP, 0);
+
+    if (separator_position == -1) {
+      // Format of memory_string isn't correct (At least for current button)
+      serialError("Uploading to memory failed, memory_string format is incorrect!");
+
+      return;
+    }
+
+    uint8_t number = current.substring(0, separator_position).toInt();
+    String keys = current.substring(separator_position + 1);
+
+    int inner_separator_position = keys.indexOf(MESSAGE_SEP_INNER, 0);
+
+    if (inner_separator_position == -1) {
+      // Format of memory_string isn't correct (At least for current button)
+      serialError("Uploading to memory failed, memory_string format is incorrect!");
+
+      return;
+    }
+
+    byte normal_letter = keys.substring(0, inner_separator_position).toInt();
+    byte modkey_letter = keys.substring(inner_separator_position + 1).toInt();
+
+    // Button indecies in keymap start from 1 but in buttons_layout,
+    // they start from 0. Hence the "number - 1"
+    memory.buttons_layout[number - 1].key = normal_letter;
+    memory.buttons_layout[number - 1].mod = modkey_letter;
+
+    if (index == memory_string.length()) {
+      // Last index
+      serialError("Last index");
+
+      break;
+    }
+
+    memory_string = memory_string.substring(index + 1);
+  }
+
+  // Upload to flash
+  saveMemory();
 }
 
 void pair() {
@@ -199,6 +296,13 @@ void handleMessages() {
     incoming_message = { message, message.charAt(0), message.substring(1) };
 
     switch (incoming_message.key) {
+      // Uploading to config memory
+      case 'u':
+        uploadMemoryToFlash(incoming_message.value);
+
+        break;
+
+      // Test message to change LED's color
       case 'l':
         if (incoming_message.value == "1")
           ledSetColor(255, 255, 0);
@@ -226,9 +330,9 @@ void handleButtons() {
     byte id = e.bit.KEY - 1;
     byte map_id = e.bit.KEY;
 
-    byte key = layout[id].key;
+    byte key = memory.buttons_layout[id].key;
     byte key_orig = key;
-    byte mod = layout[id].mod;
+    byte mod = memory.buttons_layout[id].mod;
 
 #if !MODKEY_DISABLED
     if (modkey && key != 255)
