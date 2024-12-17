@@ -425,6 +425,10 @@ void handlePotentiometers() {
 
 void handleJoystick() {
 #if !JOYSTICK_DISABLED
+  // Multiplication of 25 is just so the sensitivity range can be lower
+  // so, intead of 0-25 it's 0-1 now. 0.1, 0.2, ...
+  const float sensitivity = joystick_sensitivity / 25;
+
   static unsigned long last_move_time = 0;
 
   // Accumulated movement values for smooth fractional handling
@@ -447,10 +451,8 @@ void handleJoystick() {
     if (abs(value_x) < JOYSTICK_DEADZONE) value_x = 0;
     if (abs(value_y) < JOYSTICK_DEADZONE) value_y = 0;
 
-    // Multiplication of 25 is just so the sensitivity range can be lower
-    // so, intead of 0-25 it's 0-1 now. 0.1, 0.2, ...
-    accumulated_x += value_x * joystick_sensitivity / 25;
-    accumulated_y += value_y * joystick_sensitivity / 25;
+    accumulated_x += value_x * sensitivity;
+    accumulated_y += value_y * sensitivity;
 
     int mouse_x = int(accumulated_x);
     int mouse_y = int(accumulated_y);
@@ -460,17 +462,19 @@ void handleJoystick() {
     accumulated_y -= mouse_y;
 
     if (mouse_x != 0 || mouse_y != 0) {
-      Mouse.move(mouse_x, mouse_y);
+      if (!modkey) {
+        Mouse.move(mouse_x, mouse_y);
+      } else {
+        // Use mouse scroll instead of moving cursor if the modkey was held
+        int max_mouse_y = (CUSTOM_ADC_RESOLUTION / 2) * sensitivity;
+        int mouse_wheel_y = mouse_y > 0 ? -2 : 2;
 
-      // // Mouse wheel TEST
-      // // Later we add the ability to scroll if the modkey was held
-      // int max_mouse_y = (CUSTOM_ADC_RESOLUTION / 2) * joystick_sensitivity / 25;
-      // Serial.println("Max: " + String(max_mouse_y));
-      // int mouse_wheel_y = mouse_y > 0 ? -2 : 2;
-      // // if the current was less than half of max
-      // if (abs(mouse_y) < max_mouse_y) mouse_wheel_y /= 2;
+        // If the current was less than half of max, lower the scroll speed
+        // essentially, two steps of scrolling speed
+        if (abs(mouse_y) < max_mouse_y) mouse_wheel_y /= 2;
 
-      // Mouse.move(0, 0, mouse_wheel_y);
+        Mouse.move(0, 0, mouse_wheel_y);
+      }
     }
 
     last_move_time = current_time;
