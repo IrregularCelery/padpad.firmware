@@ -461,6 +461,16 @@ void handleJoystick() {
 
     if (mouse_x != 0 || mouse_y != 0) {
       Mouse.move(mouse_x, mouse_y);
+
+      // // Mouse wheel TEST
+      // // Later we add the ability to scroll if the modkey was held
+      // int max_mouse_y = (CUSTOM_ADC_RESOLUTION / 2) * joystick_sensitivity / 25;
+      // Serial.println("Max: " + String(max_mouse_y));
+      // int mouse_wheel_y = mouse_y > 0 ? -2 : 2;
+      // // if the current was less than half of max
+      // if (abs(mouse_y) < max_mouse_y) mouse_wheel_y /= 2;
+
+      // Mouse.move(0, 0, mouse_wheel_y);
     }
 
     last_move_time = current_time;
