@@ -5,31 +5,22 @@
 #define DEVICE_NAME "PadPad"
 #define DEVICE_MANUFACTURER "Irregular Celery"
 
-// You can disable any of these features if you don't need them
-#define LED_DISABLED false  // NOT RECOMMENDED : you wouldn't be able to \
-                                                  // see the current state of the program if you \
-                                                  // disable this feature. \
-                                                  // e.g. PAIRING, CONNECTING, DISCONNECING, etc.
-#define POTENTIOMETERS_DISABLED false
-#define JOYSTICK_DISABLED false
-#define ROTARY_ENCODER_DISABLED false
-
 // Make sure to change this if you edited `analogReadResolution(10)`
 #define CUSTOM_ADC_RESOLUTION 1024  // 2^10
 
-/*---------------------------- Pins settings -----------------------------*/
+/*------------------------- Components settings --------------------------*/
+// You can disable any of these features if you don't need them
 
-// WS2812B module
-#if !LED_DISABLED
-#define LED_PIN 10
-#endif
+// NOT RECOMMENDED : you wouldn't be able to see the
+// current state of the program if you disable this feature.
+// e.g. PAIRING, CONNECTING, DISCONNECING, etc.
+#define LED_DISABLED false
 
-#if !ROTARY_ENCODER_DISABLED
-// If the rotation was inverse, switch PIN1 and PIN2 (CLK OR DT)
-#define ROTARY_ENCODER_PIN1 11
-#define ROTARY_ENCODER_PIN2 12
-#define ROTARY_ENCODER_BUTTON 13
-#endif
+#define POTENTIOMETERS_DISABLED false
+
+#define JOYSTICK_DISABLED false
+
+#define ROTARY_ENCODER_DISABLED false
 
 /*--------------------------- Buttons settings ---------------------------*/
 
@@ -50,6 +41,23 @@ byte COL_PINS[COLS] = { 3, 4, 5, 6, 7 };
 // Check out `buttons_layout` in `default_memory` for buttons default layout
 
 #define DEBOUNCE_TIME 10
+
+/*---------------------------- Modkey settings ---------------------------*/
+
+// you can set one of your buttons to act as a key modifier, which means
+// for example if you set a button as the letter "A", now if you hold the modkey
+// it should be some other thing that you've set in the program.
+// NOTE: any key with the character `255` assigned to its key, is the modkey.
+// You can change your keys and their asinged letter from the application
+// check out the software: https://github.com/IrregularCelery/padpad.software
+#define MODKEY_DISABLED false
+
+/*-------------------------- RGB LED settings ----------------------------*/
+
+// WS2812B module
+#if !LED_DISABLED
+#define LED_PIN 10
+#endif
 
 /*----------------------- Potentiometers settings -----------------------*/
 
@@ -107,6 +115,15 @@ const int potentiometers_count = sizeof(potentiometer_pins) / sizeof(potentiomet
 float joystick_sensitivity = 0.5;
 #endif
 
+/*----------------------- Rotary encoder settings ------------------------*/
+
+#if !ROTARY_ENCODER_DISABLED
+// If the rotation was inverse, switch PIN1 and PIN2 (CLK OR DT)
+#define ROTARY_ENCODER_PIN1 11
+#define ROTARY_ENCODER_PIN2 12
+#define ROTARY_ENCODER_BUTTON 13
+#endif
+
 /*--------------------------- Memory settings ----------------------------*/
 
 struct Memory {
@@ -153,16 +170,6 @@ Memory default_memory = {
 #define MESSAGE_SEP ":"
 #define MESSAGE_END ";"
 #define MESSAGE_SEP_INNER "|"
-
-/*---------------------------- Modkey settings ---------------------------*/
-
-// you can set one of your buttons to act as a key modifier, which means
-// for example if you set a button as the letter "A", now if you hold the modkey
-// it should be some other thing that you've set in the program.
-// NOTE: any key with the character `255` assigned to its key, is the modkey.
-// You can change your keys and their asinged letter from the application
-// check out the software: https://github.com/IrregularCelery/padpad.software
-#define MODKEY_DISABLED false
 
 /*----------------------------- Debug settings ---------------------------*/
 
