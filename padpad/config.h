@@ -14,16 +14,14 @@
 #define JOYSTICK_DISABLED false
 #define ROTARY_ENCODER_DISABLED false
 
+// Make sure to change this if you edited `analogReadResolution(10)`
+#define CUSTOM_ADC_RESOLUTION 1024  // 2^10
+
 /*---------------------------- Pins settings -----------------------------*/
 
 // WS2812B module
 #if !LED_DISABLED
 #define LED_PIN 10
-#endif
-
-#if !JOYSTICK_DISABLED
-#define JOYSTICK_PIN_X 8
-#define JOYSTICK_PIN_Y 9
 #endif
 
 #if !ROTARY_ENCODER_DISABLED
@@ -83,6 +81,30 @@ const int potentiometers_count = sizeof(potentiometer_pins) / sizeof(potentiomet
 #endif
 #else  // POTENTIOMETERS_DISABLED
 #define ANALOG_MULTIPLEXER_DISABLED true
+#endif
+
+/*-------------------------- Joystick settings ---------------------------*/
+
+// Joystick pins
+#if !JOYSTICK_DISABLED
+#define JOYSTICK_PIN_X A1  // X-axis analog pin
+#define JOYSTICK_PIN_Y A2  // Y-axis analog pin
+#define JOYSTICK_PIN_BUTTON 19
+
+// Small number so, the analog noise wouldn't trigger joystick movement
+// because of `CUSTOM_ADC_RESOLUTION`, the adc values are between 0-1023
+#define JOYSTICK_DEADZONE 50
+// Minimum time between joystick triggers, for example for mouse move,
+// every 20 ms, a step of value that was accumulated in the past cycles
+// will be counted instead of every cycle. This ensures even the small-
+// values won't be ignored. Like for mouse movement, even if the joystick-
+// movement is small, it can't go below 1px of cursor movement, so,
+// the result, would still be faster that intended.
+// ... BASICALLY A TIME-BASED THROTTLING *sigh*
+#define JOYSTICK_TRIGGER_INTERVAL 20
+
+// TODO: Move to memory
+float joystick_sensitivity = 0.5;
 #endif
 
 /*--------------------------- Memory settings ----------------------------*/
