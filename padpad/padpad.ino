@@ -462,8 +462,11 @@ void handleJoystick() {
     accumulated_y -= mouse_y;
 
     if (mouse_x != 0 || mouse_y != 0) {
+#if !MODKEY_DISABLED
       if (!modkey) {
+#endif
         Mouse.move(mouse_x, mouse_y);
+#if !MODKEY_DISABLED
       } else {
         // Use mouse scroll instead of moving cursor if the modkey was held
         int max_mouse_y = (CUSTOM_ADC_RESOLUTION / 2) * sensitivity;
@@ -475,6 +478,7 @@ void handleJoystick() {
 
         Mouse.move(0, 0, mouse_wheel_y);
       }
+#endif
     }
 
     last_move_time = current_time;
