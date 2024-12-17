@@ -462,23 +462,28 @@ void handleJoystick() {
     accumulated_y -= mouse_y;
 
     if (mouse_x != 0 || mouse_y != 0) {
+      int mouse_wheel_y = 0;
+
 #if !MODKEY_DISABLED
-      if (!modkey) {
-#endif
-        Mouse.move(mouse_x, mouse_y);
-#if !MODKEY_DISABLED
-      } else {
+      if (modkey) {
         // Use mouse scroll instead of moving cursor if the modkey was held
         int max_mouse_y = (CUSTOM_ADC_RESOLUTION / 2) * sensitivity;
-        int mouse_wheel_y = mouse_y > 0 ? -2 : 2;
 
-        // If the current was less than half of max, lower the scroll speed
-        // essentially, two steps of scrolling speed
-        if (abs(mouse_y) < max_mouse_y) mouse_wheel_y /= 2;
+        if (mouse_y != 0) {
+          mouse_wheel_y = mouse_y > 0 ? -2 : 2;
 
-        Mouse.move(0, 0, mouse_wheel_y);
+          // If current was less than half of max, lower scroll speed
+          // essentially, two steps of scrolling speed
+          if (abs(mouse_y) < max_mouse_y) mouse_wheel_y /= 2;
+        }
+
+        // Ignore mouse movement
+        mouse_x = 0;
+        mouse_y = 0;
       }
 #endif
+
+      Mouse.move(mouse_x, mouse_y, mouse_wheel_y);
     }
 
     last_move_time = current_time;
