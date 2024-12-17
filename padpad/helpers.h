@@ -12,7 +12,7 @@ char* generateKeymap(byte row_count, byte col_count) {
 }
 
 // Function to smooth out analog reading and mapping it to a 100 step value (0-99)
-uint8_t analogStepRead(int pin, int* last_step) {
+uint8_t analogStepRead(uint8_t pin, int* last_step) {
   const float resolution = 1024;
   const float steps_count = 100;
   const float tolerance = 16;

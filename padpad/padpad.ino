@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "serial.h"
+#include "button.h"
 #include "helpers.h"
 
 #if !LED_DISABLED
