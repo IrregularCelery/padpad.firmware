@@ -28,6 +28,11 @@ public:
         if (state_ == LOW) {
           handlePress(current_time);
         }
+
+        // Button was released
+        if (state_ == HIGH) {
+          release_detected_ = true;
+        }
       }
     }
 
@@ -40,9 +45,19 @@ public:
     }
   }
 
-  bool clicked() {
-    if (single_click_detected_) {
-      single_click_detected_ = false;
+  bool pressed() {
+    if (pressed_detected_) {
+      pressed_detected_ = false;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  bool released() {
+    if (release_detected_) {
+      release_detected_ = false;
 
       return true;
     }
@@ -71,7 +86,7 @@ private:
         click_count_ = 0;
       }
     } else {
-      single_click_detected_ = true;
+      pressed_detected_ = true;
       ready_for_double_click_ = true;
       click_count_ = 1;
       last_press_time_ = current_time;
@@ -90,6 +105,7 @@ private:
   bool ready_for_double_click_ = false;
   uint8_t click_count_ = 0;
 
-  bool single_click_detected_ = false;
+  bool pressed_detected_ = false;
+  bool release_detected_ = false;
   bool double_click_detected_ = false;
 };
