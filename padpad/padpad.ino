@@ -1,17 +1,20 @@
 #include <TinyUSB_Mouse_and_Keyboard.h>
+#include <hardware/flash.h>
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_Keypad.h>
-#include <hardware/flash.h>
 
 #include "config.h"
 #include "serial.h"
 #include "button.h"
 #include "helpers.h"
 
+Adafruit_Keypad buttons = Adafruit_Keypad(makeKeymap(generateKeymap(ROWS, COLS)), ROW_PINS, COL_PINS, ROWS, COLS);
 #if !LED_DISABLED
 Adafruit_NeoPixel led(1, LED_PIN);
 #endif
-Adafruit_Keypad buttons = Adafruit_Keypad(makeKeymap(generateKeymap(ROWS, COLS)), ROW_PINS, COL_PINS, ROWS, COLS);
+#if !JOYSTICK_DISABLED
+Button joystick_button(JOYSTICK_PIN_BUTTON);
+#endif
 
 Memory memory;
 
@@ -33,11 +36,18 @@ void setup() {
   TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
   TinyUSBDevice.setManufacturerDescriptor(DEVICE_MANUFACTURER);
 
+  // HID simulation
   Keyboard.begin();
+  Mouse.begin();
+
   buttons.begin();
 
   // Load configuration from flash
   loadMemory();
+
+  // Explicitly set the analog resolution
+  // Make sure to set `CUSTOM_ADC_RESOLUTION` if you changed this
+  analogReadResolution(10);
 
 #if !LED_DISABLED
   led.begin();
@@ -46,10 +56,7 @@ void setup() {
 #endif
 
 #if !POTENTIOMETERS_DISABLED
-  // Explicitly set the analog resolution
-  analogReadResolution(10);
-
-  // Initially, we set all the members to -1 for the logic of analogStepRead()
+  // Initially, we set all members to -1 for the logic of analogStepRead()
   for (int i = 0; i < potentiometers_count; i++) {
     last_potentiometer_values[i] = -1;
   }
@@ -60,6 +67,12 @@ void setup() {
   for (int i = 0; i < 3 /* 3 bits = 8 channels */; i++) {
     pinMode(selector_pins[i], OUTPUT);
   }
+#endif
+
+#if !JOYSTICK_DISABLED
+  // Setup the joystick pins and button
+  pinMode(JOYSTICK_PIN_X, INPUT);
+  pinMode(JOYSTICK_PIN_Y, INPUT);
 #endif
 
 #if !ROTARY_ENCODER_DISABLED
@@ -94,6 +107,7 @@ void loop() {
   // ----- END DEBUGGING ----- //
 
   handleButtons();
+  handleJoystick();
 
   pairCheck();
 
@@ -405,6 +419,59 @@ void handlePotentiometers() {
 
       serialSendPotentiometer(i, value);
     }
+  }
+#endif
+}
+
+void handleJoystick() {
+#if !JOYSTICK_DISABLED
+  static unsigned long last_move_time = 0;
+
+  // Accumulated movement values for smooth fractional handling
+  static float accumulated_x = 0.0;
+  static float accumulated_y = 0.0;
+
+  unsigned long current_time = millis();
+
+  // Only trigger joystick movement if enough time has passed
+  if ((current_time - last_move_time) >= JOYSTICK_TRIGGER_INTERVAL) {
+    // Read joystick values
+    int raw_x = analogRead(JOYSTICK_PIN_X);
+    int raw_y = analogRead(JOYSTICK_PIN_Y);
+
+    // Joystick idle position values (Almost 0)
+    int value_x = raw_x - (CUSTOM_ADC_RESOLUTION / 2);
+    int value_y = raw_y - (CUSTOM_ADC_RESOLUTION / 2);
+
+    // Apply deadzone filtering to ignore ADC noise and cross-talk
+    if (abs(value_x) < JOYSTICK_DEADZONE) value_x = 0;
+    if (abs(value_y) < JOYSTICK_DEADZONE) value_y = 0;
+
+    // Multiplication of 25 is just so the sensitivity range can be lower
+    // so, intead of 0-25 it's 0-1 now. 0.1, 0.2, ...
+    accumulated_x += value_x * joystick_sensitivity / 25;
+    accumulated_y += value_y * joystick_sensitivity / 25;
+
+    int mouse_x = int(accumulated_x);
+    int mouse_y = int(accumulated_y);
+
+    // Subtract the already moved amount from the acculumator for next cycle
+    accumulated_x -= mouse_x;
+    accumulated_y -= mouse_y;
+
+    if (mouse_x != 0 || mouse_y != 0) {
+      Mouse.move(mouse_x, mouse_y);
+    }
+
+    last_move_time = current_time;
+  }
+
+  joystick_button.tick();
+
+  if (joystick_button.pressed()) {
+    Mouse.press();
+  } else if (joystick_button.released()) {
+    Mouse.release();
   }
 #endif
 }
