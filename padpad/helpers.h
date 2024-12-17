@@ -13,7 +13,6 @@ char* generateKeymap(byte row_count, byte col_count) {
 
 // Function to smooth out analog reading and mapping it to a 100 step value (0-99)
 uint8_t analogStepRead(uint8_t pin, int* last_step) {
-  const float resolution = 1024;
   const float steps_count = 100;
   const float tolerance = 16;
 
@@ -25,7 +24,7 @@ uint8_t analogStepRead(uint8_t pin, int* last_step) {
   }
 
   // Create hysteresis boundaries
-  float step_size = resolution / steps_count;
+  float step_size = CUSTOM_ADC_RESOLUTION / steps_count;
   float lower_bound = (*last_step * step_size) - (tolerance / 2);
   float upper_bound = (*last_step * step_size) + step_size + (tolerance / 2);
 
