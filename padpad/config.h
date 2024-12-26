@@ -126,6 +126,16 @@ float joystick_sensitivity = 0.5;
 #define ROTARY_ENCODER_BUTTON 22
 #endif
 
+/*----------------------- Rotary encoder settings ------------------------*/
+
+// We're using ST7920 GLCD
+#if !DISPLAY_DISABLED
+#define DISPLAY_RS_PIN 13  // CS
+#define DISPLAY_RW_PIN 11  // TX/MOSI
+#define DISPLAY_E_PIN 10   // SCK
+#define DISPLAY_RST_PIN 9  // Any digital pin
+#endif
+
 /*--------------------------- Memory settings ----------------------------*/
 
 struct Memory {
