@@ -1,7 +1,8 @@
 #include <TinyUSB_Mouse_and_Keyboard.h>
 #include <hardware/flash.h>
-#include <Adafruit_NeoPixel.h>
 #include <Adafruit_Keypad.h>
+#include <Adafruit_NeoPixel.h>
+#include <U8g2lib.h>
 
 #include "config.h"
 #include "serial.h"
@@ -14,6 +15,9 @@ Adafruit_NeoPixel led(1, LED_PIN);
 #endif
 #if !JOYSTICK_DISABLED
 Button joystick_button(JOYSTICK_PIN_BUTTON);
+#endif
+#if !DISPLAY_DISABLED
+U8G2_ST7920_128X64_F_SW_SPI display(U8G2_R0, DISPLAY_E_PIN, DISPLAY_RW_PIN, DISPLAY_RS_PIN, DISPLAY_RST_PIN);
 #endif
 
 Memory memory;
@@ -83,6 +87,11 @@ void setup() {
   // Attach both rotary encoder pins to an interrupt pin
   attachInterrupt(digitalPinToInterrupt(ROTARY_ENCODER_PIN1), rotaryEncoderMove, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ROTARY_ENCODER_PIN2), rotaryEncoderMove, CHANGE);
+#endif
+
+#if !DISPLAY_DISABLED
+  display.begin();
+  handleDisplay();
 #endif
 
   Serial.begin(BAUD_RATE);
@@ -523,5 +532,16 @@ void handleRotaryEncoder() {
       Serial.println(rotation_value);
     }
   }
+#endif
+}
+
+void handleDisplay() {
+#if !DISPLAY_DISABLED
+  display.clearBuffer();
+  display.setFont(u8g2_font_ncenB14_tr);
+  display.drawStr(10, 32, "PadPad");
+  display.setFont(u8g2_font_6x10_tr);
+  display.drawStr(10, 48, "IrregularCelery");
+  display.sendBuffer();
 #endif
 }
