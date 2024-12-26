@@ -117,6 +117,7 @@ void loop() {
 
   handleButtons();
   handleJoystick();
+  handleRotaryEncoder();
 
   pairCheck();
 
@@ -129,12 +130,7 @@ void loop() {
 #if !POTENTIOMETERS_DISABLED
   handlePotentiometers();
 #endif
-
-#if !ROTARY_ENCODER_DISABLED
-  handleRotaryEncoder();
-#endif
 }
-
 
 // ------------- Config memory functions ------------ //
 
@@ -508,28 +504,37 @@ void handleJoystick() {
 #endif
 }
 
+int encoder_test = 0;
+
 void handleRotaryEncoder() {
 #if !ROTARY_ENCODER_DISABLED
-  static int encoder_test = 0;
-
   if (rotaryEncoderMoved()) {
     int8_t rotation_value = rotaryEncoderRead();
 
     // If valid movement, do something
     if (rotation_value != 0) {
-      // Set any variable value as the rotary encoder position change
+      // Set any variable value by the rotary encoder position change
       encoder_test += rotation_value;
+
+      // Update display
+      handleDisplay();
 
       // Check rotary encoder direction
       if (rotation_value < 1) {
+#if DEBUG_ROTARY_ENCODER
         Serial.println("counterclockwise");
+#endif
       } else {
+#if DEBUG_ROTARY_ENCODER
         Serial.println("clockwise");
+#endif
       }
 
+#if DEBUG_ROTARY_ENCODER
       Serial.print(encoder_test);
       Serial.print("\t");
       Serial.println(rotation_value);
+#endif
     }
   }
 #endif
@@ -542,6 +547,8 @@ void handleDisplay() {
   display.drawStr(10, 32, "PadPad");
   display.setFont(u8g2_font_6x10_tr);
   display.drawStr(10, 48, "IrregularCelery");
+  display.setCursor(96, 24);
+  display.print(encoder_test);
   display.sendBuffer();
 #endif
 }
