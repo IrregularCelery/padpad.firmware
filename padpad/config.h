@@ -22,6 +22,8 @@
 
 #define ROTARY_ENCODER_DISABLED false
 
+#define DISPLAY_DISABLED false
+
 /*--------------------------- Buttons settings ---------------------------*/
 
 struct Layout {
@@ -56,7 +58,7 @@ byte COL_PINS[COLS] = { 3, 4, 5, 6, 7 };
 
 // WS2812B module
 #if !LED_DISABLED
-#define LED_PIN 10
+#define LED_PIN 8
 #endif
 
 /*----------------------- Potentiometers settings -----------------------*/
@@ -119,9 +121,9 @@ float joystick_sensitivity = 0.5;
 
 #if !ROTARY_ENCODER_DISABLED
 // If the rotation was inverse, switch PIN1 and PIN2 (CLK OR DT)
-#define ROTARY_ENCODER_PIN1 11
-#define ROTARY_ENCODER_PIN2 12
-#define ROTARY_ENCODER_BUTTON 13
+#define ROTARY_ENCODER_PIN1 20
+#define ROTARY_ENCODER_PIN2 21
+#define ROTARY_ENCODER_BUTTON 22
 #endif
 
 /*--------------------------- Memory settings ----------------------------*/
@@ -189,3 +191,17 @@ Memory default_memory = {
 // This is only for testing the rotary encoder and getting its values,
 // if this is true, the rest of the functionalities are disabled!
 #define DEBUG_ROTARY_ENCODER false
+
+/*------------------------------- Warnings -------------------------------*/
+
+#if DISPLAY_DISABLED
+#if !ROTARY_ENCODER_DISABLED
+#warning RotaryEncoder is useless without a display!
+#endif
+#endif
+
+#if ROTARY_ENCODER_DISABLED
+#if !DISPLAY_DISABLED
+#warning You can't move between Display's menu items without a RotaryEncoder!
+#endif
+#endif
