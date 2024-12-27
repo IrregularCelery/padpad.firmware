@@ -36,6 +36,11 @@ int potentiometer_values[potentiometers_count] = {};
 int last_potentiometer_values[potentiometers_count] = {};
 #endif
 
+#if !DISPLAY_DISABLED
+volatile bool update_display = true;  // Flag to request display updates
+volatile bool display_ready = true;   // Ensure one update at a time
+#endif
+
 void setup() {
   TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
   TinyUSBDevice.setManufacturerDescriptor(DEVICE_MANUFACTURER);
@@ -91,10 +96,12 @@ void setup() {
 
 #if !DISPLAY_DISABLED
   display.begin();
-  handleDisplay();
+  requestDisplayUpdate();
 #endif
 
   Serial.begin(BAUD_RATE);
+
+  multicore_launch_core1(core1_entry);
 }
 
 void loop() {
@@ -115,6 +122,7 @@ void loop() {
 
   // ----- END DEBUGGING ----- //
 
+  // Functionalities that work without needing device to be paired
   handleButtons();
   handleJoystick();
   handleRotaryEncoder();
@@ -125,10 +133,46 @@ void loop() {
   if (should_skip)
     return;
 
+  // Functionalities that need device to be paired
   handleMessages();
-
-#if !POTENTIOMETERS_DISABLED
   handlePotentiometers();
+}
+
+// Second core main funtion (Core 1)
+void core1_entry() {
+#if MULTI_CORE_OPERATIONS
+#if !DISPLAY_DISABLED
+  unsigned long last_update = millis();
+  const unsigned long update_interval = 1000;  // (is ms)
+
+  while (true) {
+    // Automatic screen update every second
+    if (millis() - last_update >= update_interval) {
+      last_update = millis();
+
+      updateDisplay();
+    }
+
+    if (update_display && display_ready) {
+      display_ready = false;
+      update_display = false;
+
+      updateDisplay();
+
+      display_ready = true;
+    }
+  }
+#endif
+#endif
+}
+
+void requestDisplayUpdate() {
+#if !DISPLAY_DISABLED
+#if MULTI_CORE_OPERATIONS
+  update_display = true;
+#else
+  updateDisplay();
+#endif
 #endif
 }
 
@@ -517,7 +561,7 @@ void handleRotaryEncoder() {
       encoder_test += rotation_value;
 
       // Update display
-      handleDisplay();
+      requestDisplayUpdate();
 
       // Check rotary encoder direction
       if (rotation_value < 1) {
@@ -540,7 +584,7 @@ void handleRotaryEncoder() {
 #endif
 }
 
-void handleDisplay() {
+void updateDisplay() {
 #if !DISPLAY_DISABLED
   display.clearBuffer();
   display.setFont(u8g2_font_ncenB14_tr);
@@ -549,6 +593,8 @@ void handleDisplay() {
   display.drawStr(10, 48, "IrregularCelery");
   display.setCursor(96, 24);
   display.print(encoder_test);
+  display.setCursor(96, 32);
+  display.print(analogReadTemp());
   display.sendBuffer();
 #endif
 }
