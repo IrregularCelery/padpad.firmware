@@ -8,6 +8,13 @@
 // Make sure to change this if you edited `analogReadResolution(10)`
 #define CUSTOM_ADC_RESOLUTION 1024  // 2^10
 
+// Multi-core functionality
+// If your microcontroller has more than one core, it's recommended
+// to have this option on. Otherwise, make sure to set it to false.
+// This will make sure all the functionalities are seemless and
+// responsive, primarily for display updates.
+#define MULTI_CORE_OPERATIONS true
+
 /*------------------------- Components settings --------------------------*/
 // You can disable any of these features if you don't need them
 
