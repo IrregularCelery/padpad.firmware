@@ -1,5 +1,7 @@
 #pragma once
 
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
+
 char* generateKeymap(byte row_count, byte col_count) {
   int size = row_count * col_count;
   char* keymap = new char[size];
