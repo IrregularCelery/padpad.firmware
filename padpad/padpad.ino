@@ -16,6 +16,9 @@ Adafruit_NeoPixel led(1, LED_PIN);
 #if !JOYSTICK_DISABLED
 Button joystick_button(JOYSTICK_PIN_BUTTON);
 #endif
+#if !ROTARY_ENCODER_DISABLED
+Button rotary_encoder_button(ROTARY_ENCODER_BUTTON);
+#endif
 #if !DISPLAY_DISABLED
 U8G2_ST7920_128X64_F_SW_SPI display(U8G2_R0, DISPLAY_E_PIN, DISPLAY_RW_PIN, DISPLAY_RS_PIN, DISPLAY_RST_PIN);
 #endif
@@ -37,7 +40,7 @@ int last_potentiometer_values[potentiometers_count] = {};
 #endif
 
 #if !DISPLAY_DISABLED
-ViewType current_view = VIEW_MENU;
+ViewType current_view = VIEW_HOME;
 Menu current_menu = {
   main_menu,
   ARRAY_SIZE(main_menu),
@@ -161,11 +164,10 @@ void core1_entry() {
 #if MULTI_CORE_OPERATIONS
 #if !DISPLAY_DISABLED
   unsigned long last_update = millis();
-  const unsigned long update_interval = 1000;  // (is ms)
 
   while (true) {
     // Automatic screen update every second
-    if (millis() - last_update >= update_interval) {
+    if (millis() - last_update >= DISPLAY_AUTO_UPDATE_INTERVAL) {
       last_update = millis();
 
       updateDisplay();
@@ -320,7 +322,7 @@ void pairCheck() {
 
     static unsigned long pairingTimer = 0;
 
-    if ((millis() - pairingTimer) >= 1000) {
+    if ((millis() - pairingTimer) >= PAIR_CHECK_INTERVAL) {
       serialSend("READY", "Firmware is ready to pair with the app!");
 
       pairingTimer = millis();
@@ -589,12 +591,12 @@ void handleRotaryEncoder() {
 #if DEBUG_ROTARY_ENCODER
         Serial.println("counterclockwise");
 #endif
-        menuUp();
+        rotaryEncoderCounterclockwise();
       } else {
 #if DEBUG_ROTARY_ENCODER
         Serial.println("clockwise");
 #endif
-        menuDown();
+        rotaryEncoderClockwise();
       }
 
 #if DEBUG_ROTARY_ENCODER
@@ -604,34 +606,96 @@ void handleRotaryEncoder() {
 #endif
     }
   }
+
+  rotary_encoder_button.tick();
+
+  if (rotary_encoder_button.pressed()) {
+    rotaryEncoderButton();
+  }
 #endif
 }
+
+#if !ROTARY_ENCODER_DISABLED
+void rotaryEncoderClockwise() {
+  menuResetInteractionTime();
+
+  switch (current_view) {
+    case VIEW_MENU:
+      menuDown();
+
+      break;
+  }
+
+  requestDisplayUpdate();
+}
+
+void rotaryEncoderCounterclockwise() {
+  menuResetInteractionTime();
+
+  switch (current_view) {
+    case VIEW_MENU:
+      menuUp();
+
+      break;
+  }
+
+  requestDisplayUpdate();
+}
+
+void rotaryEncoderButton() {
+  menuResetInteractionTime();
+
+  switch (current_view) {
+    case VIEW_HOME:
+      goToMainMenu();
+
+      break;
+
+    case VIEW_MENU:
+      menuSelect();
+
+      break;
+  }
+
+  requestDisplayUpdate();
+}
+#endif
 
 void handleDisplay() {
 #if !DISPLAY_DISABLED
   // Reset `Menu` view's arrow state
-  if (current_view == VIEW_MENU && millis() - _menu_last_interaction_time > 1000) {
+  if (current_view == VIEW_MENU && millis() - menuGetLastInteractionTime() > DISPLAY_AUTO_UPDATE_INTERVAL) {
     menu_arrow_state = 0;
   }
 
-  // // Return to `Home` view after timeout
-  // if (current_view != VIEW_HOME && millis() - _menu_last_interaction_time > viewTimeout) {
-  //   menuBack();
-  // }
+  // Return to `Home` view after timeout
+  if (current_view != VIEW_HOME && millis() - menuGetLastInteractionTime() > DISPLAY_VIEW_TIMEOUT) {
+    current_view = VIEW_HOME;
+  }
 #endif
 }
 
 void updateDisplay() {
 #if !DISPLAY_DISABLED
-  // Later use for `Home` view
-  // display.clearBuffer();
-  // display.setFont(u8g2_font_ncenB14_tr);
-  // display.drawStr(10, 32, "PadPad");
-  // display.setFont(u8g2_font_6x10_tr);
-  // display.drawStr(10, 48, "IrregularCelery");
-  // display.setCursor(96, 24);
-  // display.print(analogReadTemp());
-  // display.sendBuffer();
+  // TODO: Use a switch case instead
+  if (current_view == VIEW_HOME) {
+    // TODO: Extract this to a function
+    display.clearBuffer();
+    display.setDrawColor(1);
+    display.setFont(u8g2_font_ncenB14_tr);
+    display.drawStr(10, 32, "PadPad");
+    display.setFont(u8g2_font_6x10_tr);
+    display.drawStr(10, 48, "IrregularCelery");
+    display.setCursor(96, 24);
+    display.print(analogReadTemp());
+    display.sendBuffer();
+
+    return;
+  }
+
+  if (current_view != VIEW_MENU) {
+    return;
+  }
 
   display.clearBuffer();
   display.setFontMode(1);
@@ -653,11 +717,11 @@ void updateDisplay() {
 
   // Draw arrows
   display.drawXBMP(DISPLAY_WIDTH - ICON_WIDTH - DISPLAY_PADDING,
-                   DISPLAY_PADDING * 2, ICON_WIDTH, ICON_HEIGHT,
+                   DISPLAY_PADDING, ICON_WIDTH, ICON_HEIGHT,
                    menu_arrow_state == -1 ? arrow_up_filled : arrow_up);
 
   display.drawXBMP(DISPLAY_WIDTH - ICON_WIDTH - DISPLAY_PADDING,
-                   DISPLAY_HEIGHT - ICON_WIDTH - (DISPLAY_PADDING * 2), ICON_WIDTH, ICON_HEIGHT, menu_arrow_state == 1 ? arrow_down_filled : arrow_down);
+                   DISPLAY_HEIGHT - ICON_HEIGHT - DISPLAY_PADDING, ICON_WIDTH, ICON_HEIGHT, menu_arrow_state == 1 ? arrow_down_filled : arrow_down);
 
   for (int i = offset; i < offset + MENU_MAX_VISIBLE_ITEMS && i < size; i++) {
     if (i == index) {
@@ -682,10 +746,23 @@ void updateDisplay() {
 
 // Menu navigation functions
 
+void goToMainMenu() {
+#if !DISPLAY_DISABLED
+  if (current_view != VIEW_MENU) {
+    current_view = VIEW_MENU;
+  }
+
+  current_menu = {
+    main_menu,
+    ARRAY_SIZE(main_menu),
+    0,
+    0,
+  };
+#endif
+}
+
 void menuUp() {
 #if !DISPLAY_DISABLED
-  menuResetInteractionTime();
-
   menu_arrow_state = -1;
 
   if (current_menu.index > 0) {
@@ -696,23 +773,17 @@ void menuUp() {
       current_menu.offset--;
     }
 
-    requestDisplayUpdate();
-
     return;
   }
 
   // Scroll to last item
   current_menu.index = current_menu.size - 1;
   current_menu.offset = current_menu.size - min(current_menu.size, MENU_MAX_VISIBLE_ITEMS);
-
-  requestDisplayUpdate();
 #endif
 }
 
 void menuDown() {
 #if !DISPLAY_DISABLED
-  menuResetInteractionTime();
-
   menu_arrow_state = 1;
 
   if (current_menu.index < current_menu.size - 1) {
@@ -723,28 +794,21 @@ void menuDown() {
       current_menu.offset++;
     }
 
-    requestDisplayUpdate();
-
     return;
   }
 
   // Scroll to first item
   current_menu.index = 0;
   current_menu.offset = 0;
-
-  requestDisplayUpdate();
 #endif
 }
 
 void menuSelect() {
 #if !DISPLAY_DISABLED
-  menuResetInteractionTime();
-
 #endif
 }
 
 void menuBack() {
 #if !DISPLAY_DISABLED
-
 #endif
 }
