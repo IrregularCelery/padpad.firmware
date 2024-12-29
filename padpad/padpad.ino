@@ -37,6 +37,20 @@ int last_potentiometer_values[potentiometers_count] = {};
 #endif
 
 #if !DISPLAY_DISABLED
+ViewType current_view = MENU;
+Menu current_menu = {
+  main_menu,
+  ARRAY_SIZE(main_menu),
+  0,
+  0,
+};
+Menu last_menu = {
+  main_menu,
+  ARRAY_SIZE(main_menu),
+  0,
+  0,
+};
+
 volatile bool update_display = true;  // Flag to request display updates
 volatile bool display_ready = true;   // Ensure one update at a time
 #endif
@@ -96,6 +110,7 @@ void setup() {
 
 #if !DISPLAY_DISABLED
   display.begin();
+
   requestDisplayUpdate();
 #endif
 
@@ -548,17 +563,20 @@ void handleJoystick() {
 #endif
 }
 
-int encoder_test = 0;
-
 void handleRotaryEncoder() {
 #if !ROTARY_ENCODER_DISABLED
   if (rotaryEncoderMoved()) {
     int8_t rotation_value = rotaryEncoderRead();
 
-    // If valid movement, do something
+    // If the movement was valid, do something
     if (rotation_value != 0) {
-      // Set any variable value by the rotary encoder position change
-      encoder_test += rotation_value;
+      static unsigned long last_moved_time = 0;
+      unsigned long current_time = millis();
+
+      if ((current_time - last_moved_time) < ROTARY_ENCODER_TRIGGER_DELAY)
+        return;
+
+      last_moved_time = current_time;
 
       // Update display
       requestDisplayUpdate();
@@ -568,10 +586,12 @@ void handleRotaryEncoder() {
 #if DEBUG_ROTARY_ENCODER
         Serial.println("counterclockwise");
 #endif
+        menuUp();
       } else {
 #if DEBUG_ROTARY_ENCODER
         Serial.println("clockwise");
 #endif
+        menuDown();
       }
 
 #if DEBUG_ROTARY_ENCODER
@@ -586,15 +606,115 @@ void handleRotaryEncoder() {
 
 void updateDisplay() {
 #if !DISPLAY_DISABLED
+  // display.clearBuffer();
+  // display.setFont(u8g2_font_ncenB14_tr);
+  // display.drawStr(10, 32, "PadPad");
+  // display.setFont(u8g2_font_6x10_tr);
+  // display.drawStr(10, 48, "IrregularCelery");
+  // display.setCursor(96, 24);
+  // display.print(analogReadTemp());
+  // display.sendBuffer();
+
   display.clearBuffer();
-  display.setFont(u8g2_font_ncenB14_tr);
-  display.drawStr(10, 32, "PadPad");
+  display.setFontMode(1);
+  display.setBitmapMode(1);
   display.setFont(u8g2_font_6x10_tr);
-  display.drawStr(10, 48, "IrregularCelery");
-  display.setCursor(96, 24);
-  display.print(encoder_test);
-  display.setCursor(96, 32);
-  display.print(analogReadTemp());
+
+  MenuItem* items = current_menu.items;
+  int size = current_menu.size;
+  int index = current_menu.index;
+  int offset = current_menu.offset;
+
+  const int frame_title_padding = 8;
+
+  // Current menu item icon
+  display.setDrawColor(1);
+  display.drawXBMP(DISPLAY_WIDTH - ICON_WIDTH - DISPLAY_PADDING,
+                   (DISPLAY_HEIGHT / 2) - (ICON_HEIGHT / 2),
+                   ICON_WIDTH, ICON_HEIGHT, items[index].icon);
+
+  for (int i = offset; i < offset + MENU_MAX_VISIBLE_ITEMS && i < size; i++) {
+    if (i == index) {
+      display.setDrawColor(1);
+      display.drawRBox(DISPLAY_PADDING, (i - offset) * (MENU_ITEM_FRAME_HEIGHT + 1) + 1,
+                       DISPLAY_WIDTH - ICON_WIDTH - (DISPLAY_PADDING * 3),
+                       MENU_ITEM_FRAME_HEIGHT, MENU_ITEM_FRAME_RADIUS);
+      display.setDrawColor(0);
+    } else {
+      display.setDrawColor(1);
+      display.drawRFrame(DISPLAY_PADDING, (i - offset) * (MENU_ITEM_FRAME_HEIGHT + 1) + 1,
+                         DISPLAY_WIDTH - ICON_WIDTH - (DISPLAY_PADDING * 3),
+                         MENU_ITEM_FRAME_HEIGHT, MENU_ITEM_FRAME_RADIUS);
+      display.setDrawColor(2);
+    }
+    display.drawStr(DISPLAY_PADDING + frame_title_padding, (i - offset + 1) * (MENU_ITEM_FRAME_HEIGHT + 1) - 2, items[i].title);
+  }
+
   display.sendBuffer();
+#endif
+}
+
+// Menu navigation functions
+
+void menuUp() {
+#if !DISPLAY_DISABLED
+  menuResetInteractionTime();
+
+  if (current_menu.index > 0) {
+    // Scroll to previous item
+    current_menu.index--;
+
+    if (current_menu.index < current_menu.offset) {
+      current_menu.offset--;
+    }
+
+    requestDisplayUpdate();
+
+    return;
+  }
+
+  // Scroll to last item
+  current_menu.index = current_menu.size - 1;
+  current_menu.offset = current_menu.size - min(current_menu.size, MENU_MAX_VISIBLE_ITEMS);
+
+  requestDisplayUpdate();
+#endif
+}
+
+void menuDown() {
+#if !DISPLAY_DISABLED
+  menuResetInteractionTime();
+
+  if (current_menu.index < current_menu.size - 1) {
+    // Scroll to next item
+    current_menu.index++;
+
+    if (current_menu.index >= current_menu.offset + MENU_MAX_VISIBLE_ITEMS) {
+      current_menu.offset++;
+    }
+
+    requestDisplayUpdate();
+
+    return;
+  }
+
+  // Scroll to first item
+  current_menu.index = 0;
+  current_menu.offset = 0;
+
+  requestDisplayUpdate();
+#endif
+}
+
+void menuSelect() {
+#if !DISPLAY_DISABLED
+  menuResetInteractionTime();
+
+#endif
+}
+
+void menuBack() {
+#if !DISPLAY_DISABLED
+
 #endif
 }
