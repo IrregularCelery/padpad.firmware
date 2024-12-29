@@ -5,6 +5,8 @@
 #define DEVICE_NAME "PadPad"
 #define DEVICE_MANUFACTURER "Irregular Celery"
 
+#define PAIR_CHECK_INTERVAL 1000  // Interval of retrying (is ms)
+
 // Make sure to change this if you edited `analogReadResolution(10)`
 #define CUSTOM_ADC_RESOLUTION 1024  // 2^10
 
@@ -168,12 +170,8 @@ struct Menu {
 MenuItem main_menu[] = {
   { "Mouse", mouse_icon, nullptr, 0 },
   { "Keyboard", keyboard_icon, nullptr, 0 },
-  { "Potentiometer", default_icon, nullptr, 0 },
-  { "Memory", default_icon, nullptr, 0 },
-  { "Memory", default_icon, nullptr, 0 },
-  { "Potentiometer", default_icon, nullptr, 0 },
-  { "Memory", default_icon, nullptr, 0 },
-  { "Potentiometer", default_icon, nullptr, 0 },
+  { "Potentiometer", potentiometer_icon, nullptr, 0 },
+  { "Memory", memory_icon, nullptr, 0 },
   { "Back", back_icon, nullptr, 0 },
 };
 
@@ -187,7 +185,9 @@ MenuItem main_menu[] = {
 #define DISPLAY_WIDTH 128
 #define DISPLAY_HEIGHT 64
 #define DISPLAY_PADDING 4
-#define DISPLAY_VIEW_TIMEOUT 2000  // Time(ms) before going back to home view
+
+#define DISPLAY_VIEW_TIMEOUT 3000          // Time before going back to `Home` view (in ms)
+#define DISPLAY_AUTO_UPDATE_INTERVAL 1000  // (in ms)
 
 // Menu defaults
 #define MENU_MAX_VISIBLE_ITEMS 5

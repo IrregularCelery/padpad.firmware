@@ -126,4 +126,8 @@ unsigned long _menu_last_interaction_time = 0;
 void menuResetInteractionTime() {
   _menu_last_interaction_time = millis();
 }
+
+unsigned long menuGetLastInteractionTime() {
+  return _menu_last_interaction_time;
+}
 #endif
