@@ -37,7 +37,7 @@ int last_potentiometer_values[potentiometers_count] = {};
 #endif
 
 #if !DISPLAY_DISABLED
-ViewType current_view = MENU;
+ViewType current_view = VIEW_MENU;
 Menu current_menu = {
   main_menu,
   ARRAY_SIZE(main_menu),
@@ -50,6 +50,8 @@ Menu last_menu = {
   0,
   0,
 };
+
+int8_t menu_arrow_state = 0;  // -1 = up, 1 = down, 0 = none
 
 volatile bool update_display = true;  // Flag to request display updates
 volatile bool display_ready = true;   // Ensure one update at a time
@@ -141,6 +143,7 @@ void loop() {
   handleButtons();
   handleJoystick();
   handleRotaryEncoder();
+  handleDisplay();
 
   pairCheck();
 
@@ -604,8 +607,23 @@ void handleRotaryEncoder() {
 #endif
 }
 
+void handleDisplay() {
+#if !DISPLAY_DISABLED
+  // Reset `Menu` view's arrow state
+  if (current_view == VIEW_MENU && millis() - _menu_last_interaction_time > 1000) {
+    menu_arrow_state = 0;
+  }
+
+  // // Return to `Home` view after timeout
+  // if (current_view != VIEW_HOME && millis() - _menu_last_interaction_time > viewTimeout) {
+  //   menuBack();
+  // }
+#endif
+}
+
 void updateDisplay() {
 #if !DISPLAY_DISABLED
+  // Later use for `Home` view
   // display.clearBuffer();
   // display.setFont(u8g2_font_ncenB14_tr);
   // display.drawStr(10, 32, "PadPad");
@@ -632,6 +650,14 @@ void updateDisplay() {
   display.drawXBMP(DISPLAY_WIDTH - ICON_WIDTH - DISPLAY_PADDING,
                    (DISPLAY_HEIGHT / 2) - (ICON_HEIGHT / 2),
                    ICON_WIDTH, ICON_HEIGHT, items[index].icon);
+
+  // Draw arrows
+  display.drawXBMP(DISPLAY_WIDTH - ICON_WIDTH - DISPLAY_PADDING,
+                   DISPLAY_PADDING * 2, ICON_WIDTH, ICON_HEIGHT,
+                   menu_arrow_state == -1 ? arrow_up_filled : arrow_up);
+
+  display.drawXBMP(DISPLAY_WIDTH - ICON_WIDTH - DISPLAY_PADDING,
+                   DISPLAY_HEIGHT - ICON_WIDTH - (DISPLAY_PADDING * 2), ICON_WIDTH, ICON_HEIGHT, menu_arrow_state == 1 ? arrow_down_filled : arrow_down);
 
   for (int i = offset; i < offset + MENU_MAX_VISIBLE_ITEMS && i < size; i++) {
     if (i == index) {
@@ -660,6 +686,8 @@ void menuUp() {
 #if !DISPLAY_DISABLED
   menuResetInteractionTime();
 
+  menu_arrow_state = -1;
+
   if (current_menu.index > 0) {
     // Scroll to previous item
     current_menu.index--;
@@ -684,6 +712,8 @@ void menuUp() {
 void menuDown() {
 #if !DISPLAY_DISABLED
   menuResetInteractionTime();
+
+  menu_arrow_state = 1;
 
   if (current_menu.index < current_menu.size - 1) {
     // Scroll to next item

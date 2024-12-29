@@ -143,9 +143,9 @@ float joystick_sensitivity = 0.5;
 
 // Menu Setting
 enum ViewType {  // Types of views that can be shown on the display
-  HOME,          // Home view to show a logo or information
-  MENU,          // Menu view
-  PAGE,          // Page view to display/change values
+  VIEW_HOME,     // Home view to show a logo or information
+  VIEW_MENU,     // Menu view
+  VIEW_PAGE,     // Page view to display/change values
 };
 
 struct MenuItem {
