@@ -131,16 +131,70 @@ float joystick_sensitivity = 0.5;
 #define ROTARY_ENCODER_PIN1 20
 #define ROTARY_ENCODER_PIN2 21
 #define ROTARY_ENCODER_BUTTON 22
+
+#define ROTARY_ENCODER_TRIGGER_DELAY 100  // Slight delay time to avoid \
+                                          // infinite acceleration
 #endif
 
-/*----------------------- Rotary encoder settings ------------------------*/
+/*--------------------------- Display settings ---------------------------*/
 
 // We're using ST7920 GLCD
 #if !DISPLAY_DISABLED
+
+// Menu Setting
+enum ViewType {  // Types of views that can be shown on the display
+  HOME,          // Home view to show a logo or information
+  MENU,          // Menu view
+  PAGE,          // Page view to display/change values
+};
+
+struct MenuItem {
+  const char* title;
+  const uint8_t* icon;  // UTF-8 icon
+  MenuItem* sub_menu;   // Set to nullptr if this item doesn't have a submenu
+  int sub_menu_size;    // Size of the sub_menu or 0 if doesn't have one
+};
+
+struct Menu {
+  MenuItem* items;
+  int size;
+  int index;
+  int offset;
+};
+
+// Menus
+#include "icons.h"
+
+MenuItem main_menu[] = {
+  { "Mouse", mouse_icon, nullptr, 0 },
+  { "Keyboard", keyboard_icon, nullptr, 0 },
+  { "Potentiometer", default_icon, nullptr, 0 },
+  { "Memory", default_icon, nullptr, 0 },
+  { "Memory", default_icon, nullptr, 0 },
+  { "Potentiometer", default_icon, nullptr, 0 },
+  { "Memory", default_icon, nullptr, 0 },
+  { "Potentiometer", default_icon, nullptr, 0 },
+  { "Back", back_icon, nullptr, 0 },
+};
+
+// Pins
 #define DISPLAY_RS_PIN 13  // CS
 #define DISPLAY_RW_PIN 11  // TX/MOSI
 #define DISPLAY_E_PIN 10   // SCK
 #define DISPLAY_RST_PIN 9  // Any digital pin
+
+// General
+#define DISPLAY_WIDTH 128
+#define DISPLAY_HEIGHT 64
+#define DISPLAY_PADDING 4
+#define DISPLAY_VIEW_TIMEOUT 2000  // Time(ms) before going back to home view
+
+// Menu defaults
+#define MENU_MAX_VISIBLE_ITEMS 5
+#define MENU_ITEM_FRAME_HEIGHT 11
+#define MENU_ITEM_FRAME_RADIUS 4
+#define MENU_BACK_BUTTON_TITLE "Back"
+#define MENU_BACK_BUTTON_ICON back_icon
 #endif
 
 /*--------------------------- Memory settings ----------------------------*/
