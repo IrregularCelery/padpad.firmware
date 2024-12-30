@@ -154,12 +154,13 @@ enum ViewType {  // Types of views that can be shown on the display
   VIEW_PAGE,     // Page view to display/change values
 };
 
+// Make sure to check `menus.h` for examples
 struct MenuItem {
   const char* title;
-  const uint8_t* icon;  // UTF-8 icon
-  bool back_button;     // Items with true value, act as back button
-  MenuItem* sub_menu;   // Set to nullptr if this item doesn't have a submenu
-  int sub_menu_size;    // Size of the sub_menu or 0 if doesn't have one
+  const uint8_t* icon = default_icon;  // UTF-8 icon
+  void (*callback)() = nullptr;        // Function that'd be called when entering menu item
+  MenuItem* sub_menu = nullptr;        // Set to nullptr if this item doesn't have a submenu
+  int sub_menu_size = 0;               // Size of the sub_menu or 0 if doesn't have one
 };
 
 struct Menu {
@@ -168,68 +169,6 @@ struct Menu {
   int index;
   int offset;
   Menu* last_menu;
-};
-
-// Menus
-#include "icons.h"
-
-MenuItem memory_to_default_submenu[] = {
-  { .title = "No",
-    .icon = back_icon,
-    .back_button = true,
-    .sub_menu = nullptr,
-    .sub_menu_size = 0 },
-  { .title = "Yes",
-    .icon = default_icon,
-    .back_button = false,
-    .sub_menu = nullptr,
-    .sub_menu_size = 0 },
-};
-
-MenuItem memory_submenu[] = {
-  { .title = "Default settings",
-    .icon = memory_icon,
-    .back_button = false,
-    .sub_menu = memory_to_default_submenu,
-    .sub_menu_size = ARRAY_SIZE(memory_to_default_submenu) },
-  { .title = "Save settings",
-    .icon = memory_icon,
-    .back_button = false,
-    .sub_menu = nullptr,
-    .sub_menu_size = 0 },
-  { .title = "Back",
-    .icon = back_icon,
-    .back_button = true,
-    .sub_menu = nullptr,
-    .sub_menu_size = 0 },
-};
-
-MenuItem main_menu[] = {
-  { .title = "Mouse",
-    .icon = mouse_icon,
-    .back_button = false,
-    .sub_menu = nullptr,
-    .sub_menu_size = 0 },
-  { .title = "Keyboard",
-    .icon = keyboard_icon,
-    .back_button = false,
-    .sub_menu = nullptr,
-    .sub_menu_size = 0 },
-  { .title = "Potentiometer",
-    .icon = potentiometer_icon,
-    .back_button = false,
-    .sub_menu = nullptr,
-    .sub_menu_size = 0 },
-  { .title = "Memory",
-    .icon = memory_icon,
-    .back_button = false,
-    .sub_menu = memory_submenu,
-    .sub_menu_size = ARRAY_SIZE(memory_submenu) },
-  { .title = "Back",
-    .icon = back_icon,
-    .back_button = true,
-    .sub_menu = nullptr,
-    .sub_menu_size = 0 },
 };
 
 // Pins

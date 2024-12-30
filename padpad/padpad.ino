@@ -4,10 +4,12 @@
 #include <Adafruit_NeoPixel.h>
 #include <U8g2lib.h>
 
+#include "icons.h"
 #include "config.h"
 #include "serial.h"
 #include "button.h"
 #include "helpers.h"
+#include "menus.h"
 
 Adafruit_Keypad buttons = Adafruit_Keypad(makeKeymap(generateKeymap(ROWS, COLS)), ROW_PINS, COL_PINS, ROWS, COLS);
 #if !LED_DISABLED
@@ -655,6 +657,8 @@ void rotaryEncoderButton() {
       break;
   }
 
+  menu_arrow_state = 0;
+
   requestDisplayUpdate();
 }
 #endif
@@ -668,11 +672,12 @@ void handleDisplay() {
 
   // Return to `Home` view after timeout
   if (current_view != VIEW_HOME && millis() - menuGetLastInteractionTime() > display_view_timeout) {
-    current_view = VIEW_HOME;
+    goToHome();
   }
 #endif
 }
 
+// TODO: Rename to drawView
 void updateDisplay() {
 #if !DISPLAY_DISABLED
   // TODO: Use a switch case instead
@@ -743,6 +748,11 @@ void updateDisplay() {
 }
 
 // Menu navigation functions
+
+void goToHome() {
+  current_view = VIEW_HOME;
+  menu_arrow_state = 0;
+}
 
 void goToMenu(MenuItem* menu, int menu_size) {
 #if !DISPLAY_DISABLED
@@ -819,11 +829,7 @@ void menuSelect() {
   int index = current_menu.index;
   MenuItem* items = current_menu.items;
 
-  if (items[index].back_button) {
-    menuBack();
-
-    return;
-  }
+  if (items[index].callback) items[index].callback();
 
   if (items[index].sub_menu) {
     goToMenu(items[index].sub_menu, items[index].sub_menu_size);
@@ -836,7 +842,7 @@ void menuSelect() {
 void menuBack() {
 #if !DISPLAY_DISABLED
   if (current_menu.last_menu == nullptr) {
-    current_view = VIEW_HOME;
+    goToHome();
 
     return;
   }
