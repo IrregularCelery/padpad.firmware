@@ -29,7 +29,7 @@
 // e.g. PAIRING, CONNECTING, DISCONNECING, etc.
 #define LED_DISABLED false
 
-#define POTENTIOMETERS_DISABLED false
+#define POTENTIOMETERS_DISABLED true
 
 #define JOYSTICK_DISABLED false
 
@@ -158,7 +158,7 @@ enum ViewType {  // Types of views that can be shown on the display
 struct MenuItem {
   const char* title;
   const uint8_t* icon = default_icon;  // UTF-8 icon
-  void (*callback)() = nullptr;        // Function that'd be called when entering menu item
+  bool (*callback)() = nullptr;        // Function that'd be called when entering menu item
   MenuItem* sub_menu = nullptr;        // Set to nullptr if this item doesn't have a submenu
   int sub_menu_size = 0;               // Size of the sub_menu or 0 if doesn't have one
 };
@@ -197,6 +197,9 @@ struct Memory {
   uint16_t sector_check;
 
   Layout buttons_layout[ROWS * COLS];
+#if !JOYSTICK_DISABLED
+  bool joystick_mouse_enabled;
+#endif
 };
 
 #define FLASH_SIZE (2 * 1024 * 1024)                             // Flash size of the microcontroller e.g. RPI Pico: 2 MiB
@@ -213,22 +216,25 @@ Memory default_memory = {
   // Number 255 and 0 are reserved. 255 for modkey and 0 for nothing.
   // Keep in mind 0 and '0' are different! 0 is NULL and '0' is character '0' which is number 48
   .buttons_layout = {
-    { 0, 'o' },    // Button 1
-    { 'b', 'p' },  // Button 2
-    { 'c', 'q' },  // Button 3
-    { 'd', 'r' },  // ...
-    { 'e', 's' },
-    { 'f', 't' },
-    { 'g', 'u' },
-    { 'h', 'v' },
-    { 'i', 'w' },
-    { 'j', 'x' },
-    { 'k', 'y' },
-    { 'l', 'z' },  // ...
-    { 'm', '0' },  // Button 13
-    { 'n', '1' },  // Button 14
+    { 0, 'O' },    // Button 1
+    { 'B', 'P' },  // Button 2
+    { 'C', 'Q' },  // Button 3
+    { 'D', 'R' },  // ...
+    { 'E', 'S' },
+    { 'F', 'T' },
+    { 'G', 'U' },
+    { 'H', 'V' },
+    { 'I', 'W' },
+    { 'J', 'X' },
+    { 'K', 'Y' },
+    { 'L', 'Z' },  // ...
+    { 'M', '0' },  // Button 13
+    { 'N', '1' },  // Button 14
     { 255, 0 },    // Button 15
-  }
+  },
+#if !JOYSTICK_DISABLED
+  .joystick_mouse_enabled = true,
+#endif
 };
 
 /*--------------------------- Serial settings ----------------------------*/
