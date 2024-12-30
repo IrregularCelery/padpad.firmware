@@ -17,6 +17,10 @@
 // responsive, primarily for display updates.
 #define MULTI_CORE_OPERATIONS true
 
+/*---------------------------- Helper macros -----------------------------*/
+
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
+
 /*------------------------- Components settings --------------------------*/
 // You can disable any of these features if you don't need them
 
@@ -153,6 +157,7 @@ enum ViewType {  // Types of views that can be shown on the display
 struct MenuItem {
   const char* title;
   const uint8_t* icon;  // UTF-8 icon
+  bool back_button;     // Items with true value, act as back button
   MenuItem* sub_menu;   // Set to nullptr if this item doesn't have a submenu
   int sub_menu_size;    // Size of the sub_menu or 0 if doesn't have one
 };
@@ -162,17 +167,69 @@ struct Menu {
   int size;
   int index;
   int offset;
+  Menu* last_menu;
 };
 
 // Menus
 #include "icons.h"
 
+MenuItem memory_to_default_submenu[] = {
+  { .title = "No",
+    .icon = back_icon,
+    .back_button = true,
+    .sub_menu = nullptr,
+    .sub_menu_size = 0 },
+  { .title = "Yes",
+    .icon = default_icon,
+    .back_button = false,
+    .sub_menu = nullptr,
+    .sub_menu_size = 0 },
+};
+
+MenuItem memory_submenu[] = {
+  { .title = "Default settings",
+    .icon = memory_icon,
+    .back_button = false,
+    .sub_menu = memory_to_default_submenu,
+    .sub_menu_size = ARRAY_SIZE(memory_to_default_submenu) },
+  { .title = "Save settings",
+    .icon = memory_icon,
+    .back_button = false,
+    .sub_menu = nullptr,
+    .sub_menu_size = 0 },
+  { .title = "Back",
+    .icon = back_icon,
+    .back_button = true,
+    .sub_menu = nullptr,
+    .sub_menu_size = 0 },
+};
+
 MenuItem main_menu[] = {
-  { "Mouse", mouse_icon, nullptr, 0 },
-  { "Keyboard", keyboard_icon, nullptr, 0 },
-  { "Potentiometer", potentiometer_icon, nullptr, 0 },
-  { "Memory", memory_icon, nullptr, 0 },
-  { "Back", back_icon, nullptr, 0 },
+  { .title = "Mouse",
+    .icon = mouse_icon,
+    .back_button = false,
+    .sub_menu = nullptr,
+    .sub_menu_size = 0 },
+  { .title = "Keyboard",
+    .icon = keyboard_icon,
+    .back_button = false,
+    .sub_menu = nullptr,
+    .sub_menu_size = 0 },
+  { .title = "Potentiometer",
+    .icon = potentiometer_icon,
+    .back_button = false,
+    .sub_menu = nullptr,
+    .sub_menu_size = 0 },
+  { .title = "Memory",
+    .icon = memory_icon,
+    .back_button = false,
+    .sub_menu = memory_submenu,
+    .sub_menu_size = ARRAY_SIZE(memory_submenu) },
+  { .title = "Back",
+    .icon = back_icon,
+    .back_button = true,
+    .sub_menu = nullptr,
+    .sub_menu_size = 0 },
 };
 
 // Pins
@@ -186,15 +243,13 @@ MenuItem main_menu[] = {
 #define DISPLAY_HEIGHT 64
 #define DISPLAY_PADDING 4
 
-#define DISPLAY_VIEW_TIMEOUT 3000          // Time before going back to `Home` view (in ms)
+#define DISPLAY_DEFAULT_VIEW_TIMEOUT 3000  // Time before going back to `Home` view (in ms)
 #define DISPLAY_AUTO_UPDATE_INTERVAL 1000  // (in ms)
 
 // Menu defaults
 #define MENU_MAX_VISIBLE_ITEMS 5
 #define MENU_ITEM_FRAME_HEIGHT 11
 #define MENU_ITEM_FRAME_RADIUS 4
-#define MENU_BACK_BUTTON_TITLE "Back"
-#define MENU_BACK_BUTTON_ICON back_icon
 #endif
 
 /*--------------------------- Memory settings ----------------------------*/
@@ -239,6 +294,8 @@ Memory default_memory = {
 
 /*--------------------------- Serial settings ----------------------------*/
 
+// If you want to change these settings, make sure to set the same in the
+// software as well. otherwise the connection would fail!
 #define BAUD_RATE 38400
 #define MESSAGE_SEP ":"
 #define MESSAGE_END ";"
