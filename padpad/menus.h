@@ -1,15 +1,20 @@
+#include "config.h"
+#if !DISPLAY_DISABLED
 // Forward declaration
-void menuBack();
+bool menuGoBack();
+bool menuSelectMouse();
+bool menuSelectSaveMemory();
 
 MenuItem memory_to_default_submenu[] = {
   {
     .title = "No",
     .icon = back_icon,
-    .callback = menuBack,
+    .callback = menuGoBack,
   },
   {
     .title = "Yes",
     .icon = default_icon,
+    .callback = menuSelectSaveMemory,
   },
 };
 
@@ -27,7 +32,7 @@ MenuItem memory_submenu[] = {
   {
     .title = "Back",
     .icon = back_icon,
-    .callback = menuBack,
+    .callback = menuGoBack,
   },
 };
 
@@ -35,6 +40,7 @@ MenuItem main_menu[] = {
   {
     .title = "Mouse",
     .icon = mouse_icon,
+    .callback = menuSelectMouse,
   },
   {
     .title = "Keyboard",
@@ -53,6 +59,7 @@ MenuItem main_menu[] = {
   {
     .title = "Exit",
     .icon = back_icon,
-    .callback = menuBack,
+    .callback = menuGoBack,
   },
 };
+#endif
