@@ -173,14 +173,14 @@ void core1_entry() {
     if (millis() - last_update >= DISPLAY_AUTO_UPDATE_INTERVAL) {
       last_update = millis();
 
-      updateDisplay();
+      drawViews();
     }
 
     if (update_display && display_ready) {
       display_ready = false;
       update_display = false;
 
-      updateDisplay();
+      drawViews();
 
       display_ready = true;
     }
@@ -194,7 +194,7 @@ void requestDisplayUpdate() {
 #if MULTI_CORE_OPERATIONS
   update_display = true;
 #else
-  updateDisplay();
+  drawViews();
 #endif
 #endif
 }
@@ -677,30 +677,39 @@ void handleDisplay() {
 #endif
 }
 
-// TODO: Rename to drawView
-void updateDisplay() {
+void drawViews() {
 #if !DISPLAY_DISABLED
-  // TODO: Use a switch case instead
-  if (current_view == VIEW_HOME) {
-    // TODO: Extract this to a function
-    display.clearBuffer();
-    display.setDrawColor(1);
-    display.setFont(u8g2_font_ncenB14_tr);
-    display.drawStr(10, 32, "PadPad");
-    display.setFont(u8g2_font_6x10_tr);
-    display.drawStr(10, 48, "IrregularCelery");
-    display.setCursor(96, 24);
-    display.print(analogReadTemp());
-    display.sendBuffer();
-
-    return;
-  }
-
-  if (current_view != VIEW_MENU) {
-    return;
-  }
-
   display.clearBuffer();
+
+  switch (current_view) {
+    case VIEW_HOME:
+      drawHomeView();
+
+      break;
+
+    case VIEW_MENU:
+      drawMenuView();
+
+      break;
+  }
+
+  display.sendBuffer();
+#endif
+}
+
+void drawHomeView() {
+  // Buffer clearing is handled by `drawViews()`
+  display.setDrawColor(1);
+  display.setFont(u8g2_font_ncenB14_tr);
+  display.drawStr(10, 32, "PadPad");
+  display.setFont(u8g2_font_6x10_tr);
+  display.drawStr(10, 48, "IrregularCelery");
+  display.setCursor(96, 24);
+  display.print(analogReadTemp());
+  // Sending buffer is handled by `drawViews()`
+}
+
+void drawMenuView() {
   display.setFontMode(1);
   display.setBitmapMode(1);
   display.setFont(u8g2_font_6x10_tr);
@@ -742,9 +751,6 @@ void updateDisplay() {
     }
     display.drawStr(DISPLAY_PADDING + frame_title_padding, (i - offset + 1) * (MENU_ITEM_FRAME_HEIGHT + 1) - 2, items[i].title);
   }
-
-  display.sendBuffer();
-#endif
 }
 
 // Menu navigation functions
