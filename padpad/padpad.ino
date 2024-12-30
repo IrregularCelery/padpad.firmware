@@ -25,7 +25,11 @@ U8G2_ST7920_128X64_F_SW_SPI display(U8G2_R0, DISPLAY_E_PIN, DISPLAY_RW_PIN, DISP
 
 Memory memory;
 
-Message incoming_message = { "", 0, "" };
+Message incoming_message = {
+  .message = "",
+  .key = 0,
+  .value = "",
+};
 
 bool should_skip = false;
 bool paired = false;
@@ -42,17 +46,14 @@ int last_potentiometer_values[potentiometers_count] = {};
 #if !DISPLAY_DISABLED
 ViewType current_view = VIEW_HOME;
 Menu current_menu = {
-  main_menu,
-  ARRAY_SIZE(main_menu),
-  0,
-  0,
+  .items = main_menu,
+  .size = ARRAY_SIZE(main_menu),
+  .index = 0,
+  .offset = 0,
+  .last_menu = nullptr
 };
-Menu last_menu = {
-  main_menu,
-  ARRAY_SIZE(main_menu),
-  0,
-  0,
-};
+
+unsigned long display_view_timeout = DISPLAY_DEFAULT_VIEW_TIMEOUT;
 
 int8_t menu_arrow_state = 0;  // -1 = up, 1 = down, 0 = none
 
@@ -583,9 +584,6 @@ void handleRotaryEncoder() {
 
       last_moved_time = current_time;
 
-      // Update display
-      requestDisplayUpdate();
-
       // Check rotary encoder direction
       if (rotation_value < 1) {
 #if DEBUG_ROTARY_ENCODER
@@ -669,7 +667,7 @@ void handleDisplay() {
   }
 
   // Return to `Home` view after timeout
-  if (current_view != VIEW_HOME && millis() - menuGetLastInteractionTime() > DISPLAY_VIEW_TIMEOUT) {
+  if (current_view != VIEW_HOME && millis() - menuGetLastInteractionTime() > display_view_timeout) {
     current_view = VIEW_HOME;
   }
 #endif
@@ -746,18 +744,30 @@ void updateDisplay() {
 
 // Menu navigation functions
 
-void goToMainMenu() {
+void goToMenu(MenuItem* menu, int menu_size) {
 #if !DISPLAY_DISABLED
-  if (current_view != VIEW_MENU) {
-    current_view = VIEW_MENU;
+  Menu* new_menu = new Menu;
+
+  *new_menu = current_menu;
+
+  if (current_view == VIEW_MENU) {
+    current_menu.last_menu = new_menu;
+  } else {
+    current_menu.last_menu = nullptr;
   }
 
-  current_menu = {
-    main_menu,
-    ARRAY_SIZE(main_menu),
-    0,
-    0,
-  };
+  current_menu.items = menu;
+  current_menu.size = menu_size;
+  current_menu.index = 0;
+  current_menu.offset = 0;
+
+  current_view = VIEW_MENU;
+#endif
+}
+
+void goToMainMenu() {
+#if !DISPLAY_DISABLED
+  goToMenu(main_menu, ARRAY_SIZE(main_menu));
 #endif
 }
 
@@ -805,10 +815,35 @@ void menuDown() {
 
 void menuSelect() {
 #if !DISPLAY_DISABLED
+  int size = current_menu.size;
+  int index = current_menu.index;
+  MenuItem* items = current_menu.items;
+
+  if (items[index].back_button) {
+    menuBack();
+
+    return;
+  }
+
+  if (items[index].sub_menu) {
+    goToMenu(items[index].sub_menu, items[index].sub_menu_size);
+
+    return;
+  }
 #endif
 }
 
 void menuBack() {
 #if !DISPLAY_DISABLED
+  if (current_menu.last_menu == nullptr) {
+    current_view = VIEW_HOME;
+
+    return;
+  }
+
+  Menu* previous_menu = current_menu.last_menu;
+  current_menu = *previous_menu;
+
+  delete previous_menu;
 #endif
 }
