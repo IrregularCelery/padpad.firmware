@@ -54,13 +54,17 @@ Menu current_menu = {
   .offset = 0,
   .last_menu = nullptr
 };
+DynamicRef page_data;
 
 unsigned long display_view_timeout = DISPLAY_DEFAULT_VIEW_TIMEOUT;
 
 int8_t menu_arrow_state = 0;  // -1 = up, 1 = down, 0 = none
+#endif
 
+#if MULTI_CORE_OPERATIONS
 volatile bool update_display = true;  // Flag to request display updates
 volatile bool display_ready = true;   // Ensure one update at a time
+volatile bool core1_paused = false;
 #endif
 
 void setup() {
@@ -72,9 +76,6 @@ void setup() {
   Mouse.begin();
 
   buttons.begin();
-
-  // Load configuration from flash
-  loadMemory();
 
   // Explicitly set the analog resolution
   // Make sure to set `CUSTOM_ADC_RESOLUTION` if you changed this
@@ -124,6 +125,9 @@ void setup() {
 
   Serial.begin(BAUD_RATE);
 
+  // Load configuration from flash
+  loadMemory();
+
   multicore_launch_core1(core1_entry);
 }
 
@@ -169,6 +173,11 @@ void core1_entry() {
   unsigned long last_update = millis();
 
   while (true) {
+    if (core1_paused) {
+      // Core 1 sleeps until Core 0 signals
+      __wfe();  // Wait for event
+    }
+
     // Automatic screen update every second
     if (millis() - last_update >= DISPLAY_AUTO_UPDATE_INTERVAL) {
       last_update = millis();
@@ -212,12 +221,23 @@ void loadMemory() {
     memory = default_memory;  // Set to default config memory
 
     serialSend("MEMORY", "Could not retrieve config memory data! Using the defaults instead...");
+
+    saveMemory();
+
+    return;
   }
+
+  serialSend("MEMORY", "Config memory data was loaded.");
 }
 
 // Microcontrollers have limited amount of write/erase cycles
 // e.g. RPI Pico that we use here has about ~10,000 cycles!
 void saveMemory() {
+#if MULTI_CORE_OPERATIONS
+  core1_paused = true;
+  __sev();  // Signal event to wake Core 1 so WDT doesn't reset the MC
+#endif
+
   // Disable interrupts for flash operations
   noInterrupts();
 
@@ -228,13 +248,19 @@ void saveMemory() {
   flash_range_program(FLASH_END_OFFSET, (uint8_t*)&memory, sizeof(Memory));
 
   interrupts();  // Re-enable interrupts
+
+#if MULTI_CORE_OPERATIONS
+  core1_paused = false;
+  __sev();  // Ensure Core 1 sees the resume
+#endif
 }
 
 // Accepted format: 1:97|98;2:99|100;3:101|102;4:103|104;5:105|106;...
-// ':' => separator | ';' => button config end
+// ':' => separator, ';' => button config end
 // 1,2,3... = button id in keymap (Started from 1)
 // 97|98 => 97 = letter 'a' normal, b = letter 'b' modkey
 // letters are in ascii number. e.g. 97 = a
+// TODO: Rename to update buttons
 void uploadMemoryToFlash(String memory_string) {
   while (memory_string.length() > 0) {
     int index = memory_string.indexOf(MESSAGE_END);
@@ -497,6 +523,8 @@ void handlePotentiometers() {
 
 void handleJoystick() {
 #if !JOYSTICK_DISABLED
+  if (!memory.joystick_mouse_enabled) return;
+
   // Multiplication of 25 is just so the sensitivity range can be lower
   // so, intead of 0-25 it's 0-1 now. 0.1, 0.2, ...
   const float sensitivity = joystick_sensitivity / 25;
@@ -617,6 +645,7 @@ void handleRotaryEncoder() {
 
 #if !ROTARY_ENCODER_DISABLED
 void rotaryEncoderClockwise() {
+#if !DISPLAY_DISABLED
   menuResetInteractionTime();
 
   switch (current_view) {
@@ -627,9 +656,11 @@ void rotaryEncoderClockwise() {
   }
 
   requestDisplayUpdate();
+#endif
 }
 
 void rotaryEncoderCounterclockwise() {
+#if !DISPLAY_DISABLED
   menuResetInteractionTime();
 
   switch (current_view) {
@@ -640,9 +671,11 @@ void rotaryEncoderCounterclockwise() {
   }
 
   requestDisplayUpdate();
+#endif
 }
 
 void rotaryEncoderButton() {
+#if !DISPLAY_DISABLED
   menuResetInteractionTime();
 
   switch (current_view) {
@@ -659,7 +692,19 @@ void rotaryEncoderButton() {
 
   menu_arrow_state = 0;
 
+  // TEST: Just to demenstrate page_data
+  if (current_view == VIEW_PAGE) {
+    if (page_data == true) {
+      // memory.joystick_mouse_enabled = false;
+      page_data = false;
+    } else {
+      // memory.joystick_mouse_enabled = true;
+      page_data = true;
+    }
+  }
+
   requestDisplayUpdate();
+#endif
 }
 #endif
 
@@ -673,6 +718,10 @@ void handleDisplay() {
   // Return to `Home` view after timeout
   if (current_view != VIEW_HOME && millis() - menuGetLastInteractionTime() > display_view_timeout) {
     goToHome();
+
+#if !MULTI_CORE_OPERATIONS
+    requestDisplayUpdate();
+#endif
   }
 #endif
 }
@@ -680,6 +729,7 @@ void handleDisplay() {
 void drawViews() {
 #if !DISPLAY_DISABLED
   display.clearBuffer();
+  display.setDrawColor(1);
 
   switch (current_view) {
     case VIEW_HOME:
@@ -691,6 +741,11 @@ void drawViews() {
       drawMenuView();
 
       break;
+
+    case VIEW_PAGE:
+      drawPageView();
+
+      break;
   }
 
   display.sendBuffer();
@@ -698,6 +753,7 @@ void drawViews() {
 }
 
 void drawHomeView() {
+#if !DISPLAY_DISABLED
   // Buffer clearing is handled by `drawViews()`
   display.setDrawColor(1);
   display.setFont(u8g2_font_ncenB14_tr);
@@ -707,9 +763,11 @@ void drawHomeView() {
   display.setCursor(96, 24);
   display.print(analogReadTemp());
   // Sending buffer is handled by `drawViews()`
+#endif
 }
 
 void drawMenuView() {
+#if !DISPLAY_DISABLED
   display.setFontMode(1);
   display.setBitmapMode(1);
   display.setFont(u8g2_font_6x10_tr);
@@ -751,17 +809,42 @@ void drawMenuView() {
     }
     display.drawStr(DISPLAY_PADDING + frame_title_padding, (i - offset + 1) * (MENU_ITEM_FRAME_HEIGHT + 1) - 2, items[i].title);
   }
+#endif
+}
+
+void drawPageView() {
+#if !DISPLAY_DISABLED
+  const char* title = current_menu.items[current_menu.index].title;
+
+  display.setFont(u8g2_font_6x10_tr);
+
+  int titleWidth = display.getUTF8Width(title);
+  int titleHeight = display.getMaxCharHeight();
+
+  int x = (DISPLAY_WIDTH - titleWidth) / 2;
+  int y = 10;
+
+  int line_start = 10;
+
+  display.drawStr(x, y, title);
+  display.drawHLine(line_start, y + 1, DISPLAY_WIDTH - line_start);
+
+  display.setCursor(20, 20);
+  display.print(memory.joystick_mouse_enabled);
+#endif
 }
 
 // Menu navigation functions
 
 void goToHome() {
+#if !DISPLAY_DISABLED
   current_view = VIEW_HOME;
   menu_arrow_state = 0;
+#endif
 }
 
-void goToMenu(MenuItem* menu, int menu_size) {
 #if !DISPLAY_DISABLED
+void goToMenu(MenuItem* menu, int menu_size) {
   Menu* new_menu = new Menu;
 
   *new_menu = current_menu;
@@ -778,6 +861,13 @@ void goToMenu(MenuItem* menu, int menu_size) {
   current_menu.offset = 0;
 
   current_view = VIEW_MENU;
+}
+#endif
+
+void goToPage() {
+#if !DISPLAY_DISABLED
+  current_view = VIEW_PAGE;
+  menu_arrow_state = 0;
 #endif
 }
 
@@ -831,17 +921,25 @@ void menuDown() {
 
 void menuSelect() {
 #if !DISPLAY_DISABLED
+  bool continue_after_callback = true;
+
   int size = current_menu.size;
   int index = current_menu.index;
   MenuItem* items = current_menu.items;
 
-  if (items[index].callback) items[index].callback();
+  if (items[index].callback) {
+    continue_after_callback = items[index].callback();
+  }
+
+  if (!continue_after_callback) return;
 
   if (items[index].sub_menu) {
     goToMenu(items[index].sub_menu, items[index].sub_menu_size);
 
     return;
   }
+
+  goToPage();
 #endif
 }
 
@@ -859,3 +957,37 @@ void menuBack() {
   delete previous_menu;
 #endif
 }
+
+// Menu callback functions
+// Should be returning a boolean: After selecting a menu item, if you want
+// to call the `callback` function and ignore rest of the items properties
+// such as submenu or page view, return false, otherwise return true.
+// E.g. `menuGoBack()` function, nothing should happen after callback.
+
+#if !DISPLAY_DISABLED
+bool menuGoBack() {
+  menuBack();
+
+  return false;
+}
+
+bool menuSelectMouse() {
+#if !JOYSTICK_DISABLED
+  page_data.pointTo(memory.joystick_mouse_enabled);
+  // page_data = {
+  //   .type = PageData::BOOL,
+  //   .variable = &memory.joystick_mouse_enabled,
+  // };
+#endif
+
+  return true;
+}
+
+bool menuSelectSaveMemory() {
+  saveMemory();
+
+  menuBack();
+
+  return false;
+}
+#endif
