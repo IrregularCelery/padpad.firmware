@@ -129,3 +129,59 @@ unsigned long menuGetLastInteractionTime() {
   return _menu_last_interaction_time;
 }
 #endif
+
+class DynamicRef {
+public:
+  enum VariableType {
+    None,
+    Bool,
+    Int,
+  } type = None;
+
+  DynamicRef() = default;
+
+  // Reference assignment
+  void pointTo(int& value) {
+    _value = &value;
+    type = Int;
+  }
+  void pointTo(bool& value) {
+    _value = &value;
+    type = Bool;
+  }
+
+  VariableType getType() {
+    return type;
+  }
+
+  // Assignment operators
+  void operator=(int value) {
+    if (type == Int) {
+      *static_cast<int*>(_value) = value;
+    }
+  }
+  void operator=(bool value) {
+    if (type == Bool) {
+      *static_cast<bool*>(_value) = value;
+    }
+  }
+
+  // Comparison operators
+  bool operator==(int value) const {
+    if (type == Int) {
+      return *static_cast<int*>(_value) == value;
+    }
+
+    return false;
+  }
+  bool operator==(bool value) const {
+    if (type == Bool) {
+      return *static_cast<bool*>(_value) == value;
+    }
+
+    return false;
+  }
+
+private:
+  void* _value = nullptr;
+};
