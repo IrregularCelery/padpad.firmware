@@ -154,7 +154,7 @@ enum ViewType {  // Types of views that can be shown on the display
 // Make sure to check `menus.h` for examples
 struct MenuItem {
   const char* title;
-  const uint8_t* icon = default_icon;  // UTF-8 icon
+  const uint8_t* icon = default_icon;  // X BitMap icon
   bool (*callback)() = nullptr;        // Function that'd be called when entering menu item
   MenuItem* sub_menu = nullptr;        // Set to nullptr if this item doesn't have a submenu
   int sub_menu_size = 0;               // Size of the sub_menu or 0 if doesn't have one

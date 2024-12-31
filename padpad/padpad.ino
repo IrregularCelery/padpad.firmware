@@ -219,11 +219,10 @@ void loadMemory() {
 
   // Validate config memory data by comparing the `sector_check`
   if (memory.sector_check != SECTOR_CHECK) {
-    memory = default_memory;  // Set to default config memory
+    // Set to default config memory
+    defaultMemory();
 
     serialSend("MEMORY", "Could not retrieve config memory data! Resetting to defaults...");
-
-    saveMemory();
 
     return;
   }
