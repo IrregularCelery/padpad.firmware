@@ -1,3 +1,5 @@
+#pragma once
+
 #include "config.h"
 #if !DISPLAY_DISABLED
 // Forward declaration
@@ -18,12 +20,13 @@ MenuItem default_memory_submenu[] = {
   {
     .title = "Yes",
     .icon = default_icon,
+    .callback = menuSelectDefaultMemory,
   },
 };
 
 MenuItem memory_submenu[] = {
   {
-    .title = "Default settings",
+    .title = "Reset settings",
     .icon = memory_icon,
     .sub_menu = default_memory_submenu,
     .sub_menu_size = ARRAY_SIZE(default_memory_submenu),

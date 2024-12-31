@@ -1,3 +1,5 @@
+#pragma once
+
 #define ICON_WIDTH 17
 #define ICON_HEIGHT 16
 

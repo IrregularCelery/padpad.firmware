@@ -246,7 +246,7 @@ Memory default_memory = {
 
 #if !JOYSTICK_DISABLED
   .joystick_mouse_enabled = true,
-  .joystick_sensitivity = 0.5,
+  .joystick_sensitivity = 0.5f,
 #endif
 };
 

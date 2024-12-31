@@ -4,10 +4,11 @@
 #include <Adafruit_NeoPixel.h>
 #include <U8g2lib.h>
 
+#include "lib.h"
+
 #include "icons.h"
 #include "config.h"
 #include "serial.h"
-#include "button.h"
 #include "helpers.h"
 #include "menus.h"
 
@@ -761,6 +762,11 @@ void rotaryEncoderButton() {
       menuSelect();
 
       break;
+
+    case VIEW_PAGE:
+      menuBack();
+
+      break;
   }
 
   menu_arrow_state = 0;
@@ -906,15 +912,7 @@ void goToHome() {
 
 #if !DISPLAY_DISABLED
 void goToMenu(MenuItem* menu, int menu_size) {
-  Menu* new_menu = new Menu;
-
-  *new_menu = current_menu;
-
-  if (current_view == VIEW_MENU) {
-    current_menu.last_menu = new_menu;
-  } else {
-    current_menu.last_menu = nullptr;
-  }
+  storeLastMenu();
 
   current_menu.items = menu;
   current_menu.size = menu_size;
@@ -927,9 +925,24 @@ void goToMenu(MenuItem* menu, int menu_size) {
 
 void goToPage() {
 #if !DISPLAY_DISABLED
+  // To store current_menu as last_menu for going back
+  storeLastMenu();
+
   current_view = VIEW_PAGE;
   menu_arrow_state = 0;
 #endif
+}
+
+void storeLastMenu() {
+  Menu* new_menu = new Menu;
+
+  *new_menu = current_menu;
+
+  if (current_view == VIEW_MENU) {
+    current_menu.last_menu = new_menu;
+  } else {
+    current_menu.last_menu = nullptr;
+  }
 }
 
 void goToMainMenu() {
@@ -1011,6 +1024,10 @@ void menuBack() {
     goToHome();
 
     return;
+  }
+
+  if (current_view != VIEW_MENU) {
+    current_view = VIEW_MENU;
   }
 
   Menu* previous_menu = current_menu.last_menu;
