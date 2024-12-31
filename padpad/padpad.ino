@@ -266,8 +266,7 @@ void defaultMemory() {
 // 1,2,3... = button id in keymap (Started from 1)
 // 97|98 => 97 = letter 'a' normal, b = letter 'b' modkey
 // letters are in ascii number. e.g. 97 = a
-// TODO: Rename to update buttons
-void uploadMemoryToFlash(String memory_string) {
+void updateMemoryLayout(String memory_string) {
   while (memory_string.length() > 0) {
     int index = memory_string.indexOf(MESSAGE_END);
 
@@ -316,9 +315,6 @@ void uploadMemoryToFlash(String memory_string) {
 
     memory_string = memory_string.substring(index + 1);
   }
-
-  // Upload to flash
-  saveMemory();
 }
 
 void pair() {
@@ -419,7 +415,11 @@ void handleMessages() {
     switch (incoming_message.key) {
       // Uploading to config memory
       case 'u':
-        uploadMemoryToFlash(incoming_message.value);
+        updateMemoryLayout(incoming_message.value);
+
+        // TODO: Handle this by a different incoming_message
+        // Upload to flash
+        saveMemory();
 
         break;
 
