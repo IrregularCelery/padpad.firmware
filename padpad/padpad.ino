@@ -255,6 +255,12 @@ void saveMemory() {
 #endif
 }
 
+void defaultMemory() {
+  memory = default_memory;
+
+  saveMemory();
+}
+
 // Accepted format: 1:97|98;2:99|100;3:101|102;4:103|104;5:105|106;...
 // ':' => separator, ';' => button config end
 // 1,2,3... = button id in keymap (Started from 1)
@@ -680,6 +686,26 @@ void rotaryEncoderClockwise() {
       menuDown();
 
       break;
+
+    case VIEW_PAGE:
+      switch (page_data.getType()) {
+        case DynamicRef::Bool:
+          // Toggle booleans
+          page_data = !page_data;
+
+          break;
+
+        case DynamicRef::Float:
+          // Add to value by 0.1
+          page_data += 0.1f;
+
+          break;
+
+        default:
+          break;
+      }
+
+      break;
   }
 
   requestDisplayUpdate();
@@ -693,6 +719,26 @@ void rotaryEncoderCounterclockwise() {
   switch (current_view) {
     case VIEW_MENU:
       menuUp();
+
+      break;
+
+    case VIEW_PAGE:
+      switch (page_data.getType()) {
+        case DynamicRef::Bool:
+          // Toggle booleans
+          page_data = !page_data;
+
+          break;
+
+        case DynamicRef::Float:
+          // Subtract from value by 0.1
+          page_data -= 0.1f;
+
+          break;
+
+        default:
+          break;
+      }
 
       break;
   }
@@ -718,17 +764,6 @@ void rotaryEncoderButton() {
   }
 
   menu_arrow_state = 0;
-
-  // TEST: Just to demenstrate page_data
-  if (current_view == VIEW_PAGE) {
-    if (page_data == true) {
-      // memory.joystick_mouse_enabled = false;
-      page_data = false;
-    } else {
-      // memory.joystick_mouse_enabled = true;
-      page_data = true;
-    }
-  }
 
   requestDisplayUpdate();
 #endif
@@ -838,13 +873,24 @@ void drawPageView() {
   display.drawStr(x, y, title);
   display.drawHLine(line_start, y + 1, DISPLAY_WIDTH - line_start);
 
-  if (page_data.getType() == DynamicRef::Bool) {
-    display.setCursor(20, 20);
+  display.setCursor(20, 20);
 
-    if (page_data == true)
-      display.print("On");
-    else
-      display.print("Off");
+  switch (page_data.getType()) {
+    case DynamicRef::Bool:
+      if (page_data == true)
+        display.print("On");
+      else
+        display.print("Off");
+
+      break;
+
+    case DynamicRef::Float:
+      display.print((float)page_data);
+
+      break;
+
+    default:
+      break;
   }
 #endif
 }
@@ -946,7 +992,8 @@ void menuSelect() {
     continue_after_callback = items[index].callback();
   }
 
-  if (!continue_after_callback) return;
+  // If callback returned false, go back in menu
+  if (!continue_after_callback) return menuBack();
 
   if (items[index].sub_menu) {
     goToMenu(items[index].sub_menu, items[index].sub_menu_size);
@@ -981,12 +1028,18 @@ void menuBack() {
 
 #if !DISPLAY_DISABLED
 bool menuGoBack() {
-  menuBack();
-
   return false;
 }
 
-bool menuSelectMouse() {
+bool menuSelectMouseSensitivity() {
+#if !JOYSTICK_DISABLED
+  page_data.pointTo(memory.joystick_sensitivity);
+#endif
+
+  return true;
+}
+
+bool menuSelectMouseToggle() {
 #if !JOYSTICK_DISABLED
   page_data.pointTo(memory.joystick_mouse_enabled);
 #endif
@@ -1011,7 +1064,11 @@ bool menuSelectPotentiometers() {
 bool menuSelectSaveMemory() {
   saveMemory();
 
-  menuBack();
+  return false;
+}
+
+bool menuSelectDefaultMemory() {
+  defaultMemory();
 
   return false;
 }
