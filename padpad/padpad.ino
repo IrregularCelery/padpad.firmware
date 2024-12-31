@@ -220,7 +220,7 @@ void loadMemory() {
   if (memory.sector_check != SECTOR_CHECK) {
     memory = default_memory;  // Set to default config memory
 
-    serialSend("MEMORY", "Could not retrieve config memory data! Using the defaults instead...");
+    serialSend("MEMORY", "Could not retrieve config memory data! Resetting to defaults...");
 
     saveMemory();
 
@@ -429,7 +429,10 @@ void handleMessages() {
   }
 }
 
+// TODO: Rename to keyboard.
 void handleButtons() {
+  if (!memory.keyboard_enabled) return;
+
   static unsigned long buttonTimer = 0;
 
   if ((millis() - buttonTimer) < DEBOUNCE_TIME)
@@ -498,6 +501,8 @@ void handleButtons() {
 
 void handlePotentiometers() {
 #if !POTENTIOMETERS_DISABLED
+  if (!memory.potentiometers_enabled) return;
+
   for (int i = 0; i < potentiometers_count; i++) {
 
 #if !ANALOG_MULTIPLEXER_DISABLED
@@ -527,7 +532,7 @@ void handleJoystick() {
 
   // Multiplication of 25 is just so the sensitivity range can be lower
   // so, intead of 0-25 it's 0-1 now. 0.1, 0.2, ...
-  const float sensitivity = joystick_sensitivity / 25;
+  const float sensitivity = memory.joystick_sensitivity / 25;
 
   static unsigned long last_move_time = 0;
 
@@ -643,6 +648,28 @@ void handleRotaryEncoder() {
 #endif
 }
 
+void handleDisplay() {
+#if !DISPLAY_DISABLED
+  if (current_view != VIEW_PAGE && page_data.getType() != DynamicRef::None) {
+    page_data.reset();
+  }
+
+  // Reset `Menu` view's arrow state
+  if (current_view == VIEW_MENU && millis() - menuGetLastInteractionTime() > DISPLAY_AUTO_UPDATE_INTERVAL) {
+    menu_arrow_state = 0;
+  }
+
+  // Return to `Home` view after timeout
+  if (current_view != VIEW_HOME && millis() - menuGetLastInteractionTime() > display_view_timeout) {
+    goToHome();
+
+#if !MULTI_CORE_OPERATIONS
+    requestDisplayUpdate();
+#endif
+  }
+#endif
+}
+
 #if !ROTARY_ENCODER_DISABLED
 void rotaryEncoderClockwise() {
 #if !DISPLAY_DISABLED
@@ -707,24 +734,6 @@ void rotaryEncoderButton() {
 #endif
 }
 #endif
-
-void handleDisplay() {
-#if !DISPLAY_DISABLED
-  // Reset `Menu` view's arrow state
-  if (current_view == VIEW_MENU && millis() - menuGetLastInteractionTime() > DISPLAY_AUTO_UPDATE_INTERVAL) {
-    menu_arrow_state = 0;
-  }
-
-  // Return to `Home` view after timeout
-  if (current_view != VIEW_HOME && millis() - menuGetLastInteractionTime() > display_view_timeout) {
-    goToHome();
-
-#if !MULTI_CORE_OPERATIONS
-    requestDisplayUpdate();
-#endif
-  }
-#endif
-}
 
 void drawViews() {
 #if !DISPLAY_DISABLED
@@ -829,8 +838,14 @@ void drawPageView() {
   display.drawStr(x, y, title);
   display.drawHLine(line_start, y + 1, DISPLAY_WIDTH - line_start);
 
-  display.setCursor(20, 20);
-  display.print(memory.joystick_mouse_enabled);
+  if (page_data.getType() == DynamicRef::Bool) {
+    display.setCursor(20, 20);
+
+    if (page_data == true)
+      display.print("On");
+    else
+      display.print("Off");
+  }
 #endif
 }
 
@@ -974,10 +989,20 @@ bool menuGoBack() {
 bool menuSelectMouse() {
 #if !JOYSTICK_DISABLED
   page_data.pointTo(memory.joystick_mouse_enabled);
-  // page_data = {
-  //   .type = PageData::BOOL,
-  //   .variable = &memory.joystick_mouse_enabled,
-  // };
+#endif
+
+  return true;
+}
+
+bool menuSelectKeyboard() {
+  page_data.pointTo(memory.keyboard_enabled);
+
+  return true;
+}
+
+bool menuSelectPotentiometers() {
+#if !POTENTIOMETERS_DISABLED
+  page_data.pointTo(memory.potentiometers_enabled);
 #endif
 
   return true;

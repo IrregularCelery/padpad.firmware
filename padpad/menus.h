@@ -3,6 +3,8 @@
 // Forward declaration
 bool menuGoBack();
 bool menuSelectMouse();
+bool menuSelectKeyboard();
+bool menuSelectPotentiometers();
 bool menuSelectSaveMemory();
 
 MenuItem memory_to_default_submenu[] = {
@@ -37,19 +39,25 @@ MenuItem memory_submenu[] = {
 };
 
 MenuItem main_menu[] = {
+#if !JOYSTICK_DISABLED
   {
     .title = "Mouse",
     .icon = mouse_icon,
     .callback = menuSelectMouse,
   },
+#endif
   {
     .title = "Keyboard",
     .icon = keyboard_icon,
+    .callback = menuSelectKeyboard,
   },
+#if !POTENTIOMETERS_DISABLED
   {
     .title = "Potentiometer",
     .icon = potentiometer_icon,
+    .callback = menuSelectPotentiometers,
   },
+#endif
   {
     .title = "Memory",
     .icon = memory_icon,
