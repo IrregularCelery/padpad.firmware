@@ -136,18 +136,22 @@ public:
     None,
     Bool,
     Int,
+    Float,
   };
 
   DynamicRef() = default;
 
-  // Reference assignment
+  void pointTo(bool& value) {
+    _value = &value;
+    _type = Bool;
+  }
   void pointTo(int& value) {
     _value = &value;
     _type = Int;
   }
-  void pointTo(bool& value) {
+  void pointTo(float& value) {
     _value = &value;
-    _type = Bool;
+    _type = Float;
   }
 
   void reset() {
@@ -159,19 +163,33 @@ public:
     return _type;
   }
 
-  // Assignment operators
-  void operator=(int value) {
-    if (_type == Int) {
-      *static_cast<int*>(_value) = value;
-    }
-  }
+  // Bool
   void operator=(bool value) {
     if (_type == Bool) {
       *static_cast<bool*>(_value) = value;
     }
   }
+  bool operator==(bool value) const {
+    if (_type == Bool) {
+      return *static_cast<bool*>(_value) == value;
+    }
 
-  // Comparison operators
+    return false;
+  }
+  bool operator!() const {
+    if (_type == Bool) {
+      return !(*static_cast<bool*>(_value));
+    }
+
+    return false;  // Return false for non-bool types
+  }
+
+  // Int
+  void operator=(int value) {
+    if (_type == Int) {
+      *static_cast<int*>(_value) = value;
+    }
+  }
   bool operator==(int value) const {
     if (_type == Int) {
       return *static_cast<int*>(_value) == value;
@@ -179,9 +197,16 @@ public:
 
     return false;
   }
-  bool operator==(bool value) const {
-    if (_type == Bool) {
-      return *static_cast<bool*>(_value) == value;
+
+  // Float
+  void operator=(float value) {
+    if (_type == Float) {
+      *static_cast<float*>(_value) = value;
+    }
+  }
+  bool operator==(float value) const {
+    if (_type == Float) {
+      return *static_cast<float*>(_value) == value;
     }
 
     return false;
