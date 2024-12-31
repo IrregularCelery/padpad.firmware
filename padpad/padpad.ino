@@ -435,7 +435,6 @@ void handleMessages() {
   }
 }
 
-// TODO: Rename to keyboard.
 void handleButtons() {
   if (!memory.keyboard_enabled) return;
 

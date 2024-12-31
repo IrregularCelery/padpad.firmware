@@ -14,12 +14,12 @@ bool menuSelectDefaultMemory();
 MenuItem default_memory_submenu[] = {
   {
     .title = "No",
-    .icon = back_icon,
+    .icon = x_mark_icon,
     .callback = menuGoBack,
   },
   {
     .title = "Yes",
-    .icon = default_icon,
+    .icon = check_mark_icon,
     .callback = menuSelectDefaultMemory,
   },
 };
@@ -27,13 +27,13 @@ MenuItem default_memory_submenu[] = {
 MenuItem memory_submenu[] = {
   {
     .title = "Reset settings",
-    .icon = memory_icon,
+    .icon = reset_icon,
     .sub_menu = default_memory_submenu,
     .sub_menu_size = ARRAY_SIZE(default_memory_submenu),
   },
   {
     .title = "Save settings",
-    .icon = memory_icon,
+    .icon = upload_icon,
     .callback = menuSelectSaveMemory,
   },
   {
@@ -46,12 +46,12 @@ MenuItem memory_submenu[] = {
 MenuItem mouse_submenu[] = {
   {
     .title = "Sensitivity",
-    .icon = mouse_icon,
+    .icon = cursor_acceleration_icon,
     .callback = menuSelectMouseSensitivity,
   },
   {
     .title = "Turn on/off",
-    .icon = mouse_icon,
+    .icon = toggle_icon,
     .callback = menuSelectMouseToggle,
   },
   {
