@@ -136,46 +136,51 @@ public:
     None,
     Bool,
     Int,
-  } type = None;
+  };
 
   DynamicRef() = default;
 
   // Reference assignment
   void pointTo(int& value) {
     _value = &value;
-    type = Int;
+    _type = Int;
   }
   void pointTo(bool& value) {
     _value = &value;
-    type = Bool;
+    _type = Bool;
+  }
+
+  void reset() {
+    _value = nullptr;
+    _type = None;
   }
 
   VariableType getType() {
-    return type;
+    return _type;
   }
 
   // Assignment operators
   void operator=(int value) {
-    if (type == Int) {
+    if (_type == Int) {
       *static_cast<int*>(_value) = value;
     }
   }
   void operator=(bool value) {
-    if (type == Bool) {
+    if (_type == Bool) {
       *static_cast<bool*>(_value) = value;
     }
   }
 
   // Comparison operators
   bool operator==(int value) const {
-    if (type == Int) {
+    if (_type == Int) {
       return *static_cast<int*>(_value) == value;
     }
 
     return false;
   }
   bool operator==(bool value) const {
-    if (type == Bool) {
+    if (_type == Bool) {
       return *static_cast<bool*>(_value) == value;
     }
 
@@ -184,4 +189,5 @@ public:
 
 private:
   void* _value = nullptr;
+  VariableType _type = None;
 };
