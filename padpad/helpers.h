@@ -183,6 +183,13 @@ public:
 
     return false;  // Return false for non-bool types
   }
+  operator bool() const {
+    if (_type == Bool) {
+      return *static_cast<bool*>(_value);
+    }
+
+    return false;
+  }
 
   // Int
   void operator=(int value) {
@@ -197,6 +204,45 @@ public:
 
     return false;
   }
+  operator int() const {
+    if (_type == Int) {
+      return *static_cast<int*>(_value);
+    }
+
+    return 0;
+  }
+  void operator+=(int value) {
+    switch (_type) {
+      case Int:
+        *static_cast<int*>(_value) += value;
+
+        break;
+
+      case Float:
+        *static_cast<float*>(_value) += value;
+
+        break;
+
+      default:
+        break;
+    }
+  }
+  void operator-=(int value) {
+    switch (_type) {
+      case Int:
+        *static_cast<int*>(_value) -= value;
+
+        break;
+
+      case Float:
+        *static_cast<float*>(_value) -= value;
+
+        break;
+
+      default:
+        break;
+    }
+  }
 
   // Float
   void operator=(float value) {
@@ -210,6 +256,45 @@ public:
     }
 
     return false;
+  }
+  operator float() const {
+    if (_type == Float) {
+      return *static_cast<float*>(_value);
+    }
+
+    return 0.0f;
+  }
+  void operator+=(float value) {
+    switch (_type) {
+      case Float:
+        *static_cast<float*>(_value) += value;
+
+        break;
+
+      case Int:
+        *static_cast<int*>(_value) += (int)value;
+
+        break;
+
+      default:
+        break;
+    }
+  }
+  void operator-=(float value) {
+    switch (_type) {
+      case Float:
+        *static_cast<float*>(_value) -= value;
+
+        break;
+
+      case Int:
+        *static_cast<int*>(_value) -= (int)value;
+
+        break;
+
+      default:
+        break;
+    }
   }
 
 private:
