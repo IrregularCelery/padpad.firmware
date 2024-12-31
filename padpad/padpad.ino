@@ -55,7 +55,7 @@ Menu current_menu = {
   .offset = 0,
   .last_menu = nullptr
 };
-DynamicRef page_data;
+PageData page_data;
 
 unsigned long display_view_timeout = DISPLAY_DEFAULT_VIEW_TIMEOUT;
 
@@ -656,8 +656,9 @@ void handleRotaryEncoder() {
 
 void handleDisplay() {
 #if !DISPLAY_DISABLED
-  if (current_view != VIEW_PAGE && page_data.getType() != DynamicRef::None) {
-    page_data.reset();
+  if (current_view != VIEW_PAGE && page_data.value.getType() != DynamicRef::None) {
+    page_data.value.reset();
+    page_data.description = "";
   }
 
   // Reset `Menu` view's arrow state
@@ -688,16 +689,16 @@ void rotaryEncoderClockwise() {
       break;
 
     case VIEW_PAGE:
-      switch (page_data.getType()) {
+      switch (page_data.value.getType()) {
         case DynamicRef::Bool:
           // Toggle booleans
-          page_data = !page_data;
+          page_data.value = !page_data.value;
 
           break;
 
         case DynamicRef::Float:
           // Add to value by 0.1
-          page_data += 0.1f;
+          page_data.value += 0.1f;
 
           break;
 
@@ -723,16 +724,16 @@ void rotaryEncoderCounterclockwise() {
       break;
 
     case VIEW_PAGE:
-      switch (page_data.getType()) {
+      switch (page_data.value.getType()) {
         case DynamicRef::Bool:
           // Toggle booleans
-          page_data = !page_data;
+          page_data.value = !page_data.value;
 
           break;
 
         case DynamicRef::Float:
           // Subtract from value by 0.1
-          page_data -= 0.1f;
+          page_data.value -= 0.1f;
 
           break;
 
@@ -807,7 +808,7 @@ void drawHomeView() {
   display.setDrawColor(1);
   display.setFont(u8g2_font_ncenB14_tr);
   display.drawStr(10, 32, "PadPad");
-  display.setFont(u8g2_font_6x10_tr);
+  display.setFont(DISPLAY_DEFAULT_FONT);
   display.drawStr(10, 48, "IrregularCelery");
   display.setCursor(96, 24);
   display.print(analogReadTemp());
@@ -819,7 +820,7 @@ void drawMenuView() {
 #if !DISPLAY_DISABLED
   display.setFontMode(1);
   display.setBitmapMode(1);
-  display.setFont(u8g2_font_6x10_tr);
+  display.setFont(DISPLAY_DEFAULT_FONT);
 
   MenuItem* items = current_menu.items;
   int size = current_menu.size;
@@ -865,39 +866,137 @@ void drawPageView() {
 #if !DISPLAY_DISABLED
   const char* title = current_menu.items[current_menu.index].title;
 
-  display.setFont(u8g2_font_6x10_tr);
+  int16_t title_width = display.getUTF8Width(title);
 
-  int titleWidth = display.getUTF8Width(title);
-  int titleHeight = display.getMaxCharHeight();
+  int16_t title_x = (DISPLAY_WIDTH - title_width) / 2;
+  int16_t title_y = 8;
 
-  int x = (DISPLAY_WIDTH - titleWidth) / 2;
-  int y = 10;
+  int16_t line_start = DISPLAY_PADDING * 2;
 
-  int line_start = 10;
+  display.drawStr(title_x, title_y, title);
 
-  display.drawStr(x, y, title);
-  display.drawHLine(line_start, y + 1, DISPLAY_WIDTH - line_start);
+  display.setDrawColor(2);
+  display.drawHLine(line_start, title_y + 1, DISPLAY_WIDTH - (line_start * 2));
+  display.setDrawColor(1);
 
-  display.setCursor(20, 20);
+  display.setFont(u8g2_font_spleen5x8_mr);
 
-  switch (page_data.getType()) {
+  String description = page_data.description;
+  int16_t cursor_y = drawWrappedString(description, DISPLAY_PADDING,
+                                       title_y + DISPLAY_PADDING + 8,
+                                       DISPLAY_WIDTH - (DISPLAY_PADDING * 2), 10, 2);
+
+  display.setFont(DISPLAY_DEFAULT_FONT);
+
+  switch (page_data.value.getType()) {
     case DynamicRef::Bool:
-      if (page_data == true)
-        display.print("On");
-      else
-        display.print("Off");
+      {
+        int16_t true_button_width = display.getStrWidth(DISPLAY_TRUE_BUTTON_TEXT);
+        int16_t false_button_width = display.getStrWidth(DISPLAY_FALSE_BUTTON_TEXT);
+        int16_t true_button_x = DISPLAY_WIDTH / 6;
+        int16_t false_button_x = DISPLAY_WIDTH - (DISPLAY_WIDTH / 6) - false_button_width;
 
-      break;
+        int16_t button_height = 9;
+
+        // Selected button
+        int16_t button_x = 0;
+        int16_t button_y = cursor_y + button_height;
+        int16_t button_width = 0;
+        int8_t button_padding = 1;
+
+        display.drawStr(true_button_x, button_y, DISPLAY_TRUE_BUTTON_TEXT);
+        display.drawStr(false_button_x, button_y, DISPLAY_FALSE_BUTTON_TEXT);
+
+        if (page_data.value == true) {
+          button_x = true_button_x;
+          button_width = true_button_width;
+        } else {
+          button_x = false_button_x;
+          button_width = false_button_width;
+        }
+
+        display.setDrawColor(2);
+        display.drawRBox(button_x - (button_padding * 4),
+                         button_y - button_height,
+                         button_width + (button_padding * 8),
+                         button_height + (button_padding * 2), 2);
+        display.setDrawColor(1);
+
+        break;
+      }
 
     case DynamicRef::Float:
-      display.print((float)page_data);
+      {
+        const char* float_title = "value: ";
 
-      break;
+        int16_t value_x = display.getStrWidth(float_title) + DISPLAY_PADDING;
+        int16_t value_y = cursor_y + 8;
+
+        int8_t box_height = 9;
+        int8_t box_padding = 1;
+
+        display.drawStr((DISPLAY_PADDING * 2), value_y, float_title);
+
+        display.setCursor(value_x, value_y);
+        display.print((float)(page_data.value));
+        display.setDrawColor(1);
+
+        break;
+      }
 
     default:
       break;
   }
 #endif
+}
+
+// Draws a wrapped string and returns last line cursor y
+int16_t drawWrappedString(String text, int16_t x, int16_t y, uint16_t max_width, uint8_t line_height, uint8_t space_reduction) {
+  int16_t cursor_x = x;
+  int16_t cursor_y = y;
+
+  while (text.length() > 0) {
+    int new_line_index = text.indexOf('\n');
+
+    if (new_line_index == 0) {
+      cursor_x = x;
+      cursor_y += line_height;
+      text = text.substring(1);
+
+      continue;
+    }
+
+    int space_index = text.indexOf(' ');
+
+    if (new_line_index != -1 && (new_line_index < space_index || space_index == -1)) {
+      space_index = new_line_index;
+    }
+
+    String word = (space_index == -1) ? text : text.substring(0, space_index);
+
+    int word_width = display.getStrWidth(word.c_str());
+
+    if (cursor_x + word_width > max_width) {
+      cursor_x = x;
+      cursor_y += line_height;
+    }
+
+    // Draw the word
+    display.drawStr(cursor_x, cursor_y, word.c_str());
+
+    // Advance the cursor, reducing the space
+    cursor_x += word_width + (display.getStrWidth(" ") - space_reduction);
+
+    // Remove the processed word/line and handle \n
+    text = (space_index == -1) ? "" : text.substring(space_index + 1);
+
+    if (space_index == new_line_index) {
+      cursor_x = x;
+      cursor_y += line_height;  // Move to the next line after a newline
+    }
+  }
+
+  return cursor_y;
 }
 
 // Menu navigation functions
@@ -1049,7 +1148,8 @@ bool menuGoBack() {
 
 bool menuSelectMouseSensitivity() {
 #if !JOYSTICK_DISABLED
-  page_data.pointTo(memory.joystick_sensitivity);
+  page_data.value.pointTo(memory.joystick_sensitivity);
+  page_data.description = "Adjust mouse sensitivity";
 #endif
 
   return true;
@@ -1057,21 +1157,24 @@ bool menuSelectMouseSensitivity() {
 
 bool menuSelectMouseToggle() {
 #if !JOYSTICK_DISABLED
-  page_data.pointTo(memory.joystick_mouse_enabled);
+  page_data.value.pointTo(memory.joystick_mouse_enabled);
+  page_data.description = "Joystick mouse emulation\n(Hold ModKey to scroll)";
 #endif
 
   return true;
 }
 
 bool menuSelectKeyboard() {
-  page_data.pointTo(memory.keyboard_enabled);
+  page_data.value.pointTo(memory.keyboard_enabled);
+  page_data.description = "Capture keyboard inputs";
 
   return true;
 }
 
 bool menuSelectPotentiometers() {
 #if !POTENTIOMETERS_DISABLED
-  page_data.pointTo(memory.potentiometers_enabled);
+  page_data.value.pointTo(memory.potentiometers_enabled);
+  page_data.description = "Enable/disable knobs";
 #endif
 
   return true;

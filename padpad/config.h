@@ -29,7 +29,7 @@
 // e.g. PAIRING, CONNECTING, DISCONNECING, etc.
 #define LED_DISABLED false
 
-#define POTENTIOMETERS_DISABLED true
+#define POTENTIOMETERS_DISABLED false
 
 #define JOYSTICK_DISABLED false
 
@@ -168,6 +168,11 @@ struct Menu {
   Menu* last_menu;
 };
 
+struct PageData {
+  DynamicRef value;
+  String description = "";  // Maximum 24 characters per line for DISPLAY_WITH 128
+};
+
 // Pins
 #define DISPLAY_RS_PIN 13  // CS
 #define DISPLAY_RW_PIN 11  // TX/MOSI
@@ -178,6 +183,10 @@ struct Menu {
 #define DISPLAY_WIDTH 128
 #define DISPLAY_HEIGHT 64
 #define DISPLAY_PADDING 4
+
+#define DISPLAY_DEFAULT_FONT u8g2_font_6x10_tr
+#define DISPLAY_TRUE_BUTTON_TEXT "Enable"
+#define DISPLAY_FALSE_BUTTON_TEXT "Disable"
 
 #define DISPLAY_DEFAULT_VIEW_TIMEOUT 3000  // Time before going back to `Home` view (in ms)
 #define DISPLAY_AUTO_UPDATE_INTERVAL 1000  // (in ms)
