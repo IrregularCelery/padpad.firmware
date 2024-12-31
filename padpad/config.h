@@ -125,9 +125,6 @@ const int potentiometers_count = sizeof(potentiometer_pins) / sizeof(potentiomet
 // the result, would still be faster that intended.
 // ... BASICALLY A TIME-BASED THROTTLING *sigh*
 #define JOYSTICK_TRIGGER_INTERVAL 20
-
-// TODO: Move to memory
-float joystick_sensitivity = 0.5;
 #endif
 
 /*----------------------- Rotary encoder settings ------------------------*/
@@ -197,8 +194,16 @@ struct Memory {
   uint16_t sector_check;
 
   Layout buttons_layout[ROWS * COLS];
+
+  bool keyboard_enabled;
+
+#if !POTENTIOMETERS_DISABLED
+  bool potentiometers_enabled;
+#endif
+
 #if !JOYSTICK_DISABLED
   bool joystick_mouse_enabled;
+  float joystick_sensitivity;
 #endif
 };
 
@@ -232,8 +237,16 @@ Memory default_memory = {
     { 'N', '1' },  // Button 14
     { 255, 0 },    // Button 15
   },
+
+  .keyboard_enabled = true,
+
+#if !POTENTIOMETERS_DISABLED
+  .potentiometers_enabled = true,
+#endif
+
 #if !JOYSTICK_DISABLED
   .joystick_mouse_enabled = true,
+  .joystick_sensitivity = 0.5,
 #endif
 };
 
