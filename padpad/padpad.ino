@@ -35,7 +35,8 @@ Message incoming_message = {
 };
 
 #if MULTIPLE_PROFILES
-String profiles[] = { "Internal" };
+// TODO: Remove test profiles
+String profiles[] = { "Internal", "Profile 1", "Profile 2", "Profile 3" };
 uint8_t current_profile = 0;
 #endif
 
@@ -666,8 +667,6 @@ void handleRotaryEncoder() {
       }
 
 #if DEBUG_ROTARY_ENCODER
-      Serial.print(encoder_test);
-      Serial.print("\t");
       Serial.println(rotation_value);
 #endif
     }
@@ -1055,9 +1054,15 @@ void updateProfilesMenu() {
   int profiles_count = ARRAY_SIZE(profiles);
   profiles_menu = new MenuItem[profiles_count];
 
+  auto callback = []() -> bool {
+    current_profile = current_menu.index;
+
+    return false;
+  };
+
   for (int i = 0; i < profiles_count; i++) {
     profiles_menu[i].title = profiles[i].c_str();
-    profiles_menu[i].callback = menuSelectProfile;
+    profiles_menu[i].callback = callback;
   }
 #endif
 }
@@ -1263,12 +1268,6 @@ bool menuSelectSaveMemory() {
 
 bool menuSelectDefaultMemory() {
   defaultMemory();
-
-  return false;
-}
-
-bool menuSelectProfile() {
-  current_profile = current_menu.index;
 
   return false;
 }
