@@ -838,16 +838,98 @@ void drawViews() {
 #endif
 }
 
+void drawStatusPanel() {
+#if !DISPLAY_DISABLED
+  display.setBitmapMode(1);
+  display.setDrawColor(1);
+
+  int max_icon_count = 5;
+
+  int16_t bar_width = (MINI_ICON_WIDTH * max_icon_count)
+                      + ((max_icon_count - 1) * 1) /* padding between icons */
+                      + (DISPLAY_PADDING * 2);
+  int16_t bar_height = MINI_ICON_HEIGHT + DISPLAY_PADDING;
+  int16_t bar_x = DISPLAY_WIDTH - bar_width;
+  int16_t bar_y = 0;
+
+  int16_t icon_x = MINI_ICON_WIDTH + 1;  // Should be multiplied by position.
+                                         // e.g. (2 * icon_x), first one is 0
+  int16_t icon_y = DISPLAY_PADDING / 2;
+
+  // Bar line
+  display.drawHLine(bar_x, bar_height, bar_width);
+
+  // Vertical separator line
+  display.drawVLine(bar_x - 1, 0, DISPLAY_HEIGHT);
+
+  // Icons
+
+  display.drawXBMP(bar_x + DISPLAY_PADDING + (0 * icon_x),
+                   icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                   connected_mini_icon);
+
+  // Disabled overlay icon
+  if (!paired) {
+    display.drawXBMP(bar_x + DISPLAY_PADDING + (0 * icon_x),
+                     icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                     not_mini_icon);
+    display.setDrawColor(0);
+    display.drawXBMP(bar_x + DISPLAY_PADDING + (0 * icon_x),
+                     icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                     not_shadow_mini_icon);
+    display.setDrawColor(1);
+  }
+
+  display.drawXBMP(bar_x + DISPLAY_PADDING + (1 * icon_x),
+                   icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                   keyboard_mini_icon);
+
+  // Disabled overlay icon
+  if (!memory.keyboard_enabled) {
+    display.drawXBMP(bar_x + DISPLAY_PADDING + (1 * icon_x),
+                     icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                     not_mini_icon);
+    display.setDrawColor(0);
+    display.drawXBMP(bar_x + DISPLAY_PADDING + (1 * icon_x),
+                     icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                     not_shadow_mini_icon);
+    display.setDrawColor(1);
+  }
+
+#if !JOYSTICK_DISABLED
+  display.drawXBMP(bar_x + DISPLAY_PADDING + (2 * icon_x),
+                   icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                   mouse_mini_icon);
+
+  // Disabled overlay icon
+  if (!memory.joystick_mouse_enabled) {
+    display.drawXBMP(bar_x + DISPLAY_PADDING + (2 * icon_x),
+                     icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                     not_mini_icon);
+    display.setDrawColor(0);
+    display.drawXBMP(bar_x + DISPLAY_PADDING + (2 * icon_x),
+                     icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                     not_shadow_mini_icon);
+    display.setDrawColor(1);
+  }
+#endif
+
+  // Draw clock
+
+  const char* time_str = "12:34:56";
+
+  display.setFont(u8g2_font_t0_12b_tr);
+  display.drawStr(bar_x + (bar_width / 2) - (display.getStrWidth(time_str) / 2),
+                  bar_height + display.getMaxCharHeight() + 1 /* padding */,
+                  time_str);
+  display.setFont(DISPLAY_DEFAULT_FONT);
+#endif
+}
+
 void drawHomeView() {
 #if !DISPLAY_DISABLED
   // Buffer clearing is handled by `drawViews()`
-  display.setDrawColor(1);
-  display.setFont(u8g2_font_ncenB14_tr);
-  display.drawStr(10, 32, "PadPad");
-  display.setFont(DISPLAY_DEFAULT_FONT);
-  display.drawStr(10, 48, "IrregularCelery");
-  display.setCursor(96, 24);
-  display.print(analogReadTemp());
+  drawStatusPanel();
   // Sending buffer is handled by `drawViews()`
 #endif
 }
