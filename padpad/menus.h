@@ -94,7 +94,7 @@ MenuItem main_menu[] = {
     .callback = menuSelectBack,
   },
 };
-#endif
 
 // This menu will be filled dynamically
 MenuItem* profiles_menu = nullptr;
+#endif

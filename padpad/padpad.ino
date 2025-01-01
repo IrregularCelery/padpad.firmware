@@ -180,6 +180,7 @@ void loop() {
 }
 
 // Second core main funtion (Core 1)
+#if MULTI_CORE_OPERATIONS
 void core1_entry() {
 #if !DISPLAY_DISABLED
   auto awaitDrawViews = [&]() {
@@ -217,6 +218,7 @@ void core1_entry() {
   }
 #endif
 }
+#endif
 
 void requestDisplayUpdate() {
 #if !DISPLAY_DISABLED
@@ -994,6 +996,7 @@ void drawPageView() {
 
 // Draws a wrapped string and returns last line cursor y
 int16_t drawWrappedString(String text, int16_t x, int16_t y, uint16_t max_width, uint8_t line_height, uint8_t space_reduction) {
+#if !DISPLAY_DISABLED
   int16_t cursor_x = x;
   int16_t cursor_y = y;
 
@@ -1039,9 +1042,12 @@ int16_t drawWrappedString(String text, int16_t x, int16_t y, uint16_t max_width,
   }
 
   return cursor_y;
+#endif
+  return 0;
 }
 
 void updateProfilesMenu() {
+#if !DISPLAY_DISABLED
   if (profiles_menu != nullptr) {
     delete[] profiles_menu;
   }
@@ -1051,7 +1057,9 @@ void updateProfilesMenu() {
 
   for (int i = 0; i < profiles_count; i++) {
     profiles_menu[i].title = profiles[i].c_str();
+    profiles_menu[i].callback = menuSelectProfile;
   }
+#endif
 }
 
 // Menu navigation functions
@@ -1104,6 +1112,7 @@ void goToProfiles() {
 }
 
 void storeLastMenu() {
+#if !DISPLAY_DISABLED
   Menu* new_menu = new Menu;
 
   *new_menu = current_menu;
@@ -1113,6 +1122,7 @@ void storeLastMenu() {
   } else {
     current_menu.last_menu = nullptr;
   }
+#endif
 }
 
 void menuUp() {
@@ -1253,6 +1263,12 @@ bool menuSelectSaveMemory() {
 
 bool menuSelectDefaultMemory() {
   defaultMemory();
+
+  return false;
+}
+
+bool menuSelectProfile() {
+  current_profile = current_menu.index;
 
   return false;
 }
