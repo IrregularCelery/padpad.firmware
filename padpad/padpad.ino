@@ -63,9 +63,11 @@ int8_t menu_arrow_state = 0;  // -1 = up, 1 = down, 0 = none
 #endif
 
 #if MULTI_CORE_OPERATIONS
+volatile bool core1_paused = false;
+volatile bool core1_busy = false;
+
 volatile bool update_display = true;  // Flag to request display updates
 volatile bool display_ready = true;   // Ensure one update at a time
-volatile bool core1_paused = false;
 #endif
 
 void setup() {
@@ -129,7 +131,9 @@ void setup() {
   // Load configuration from flash
   loadMemory();
 
+#if MULTI_CORE_OPERATIONS
   multicore_launch_core1(core1_entry);
+#endif
 }
 
 void loop() {
@@ -169,13 +173,21 @@ void loop() {
 
 // Second core main funtion (Core 1)
 void core1_entry() {
-#if MULTI_CORE_OPERATIONS
 #if !DISPLAY_DISABLED
+  auto awaitDrawViews = [&]() {
+    core1_busy = true;  // Currently busy
+    drawViews();
+    core1_busy = false;  // Operation finished
+  };
+
   unsigned long last_update = millis();
 
   while (true) {
     if (core1_paused) {
       // Core 1 sleeps until Core 0 signals
+
+      core1_busy = false;  // Not busy while paused
+
       __wfe();  // Wait for event
     }
 
@@ -183,19 +195,18 @@ void core1_entry() {
     if (millis() - last_update >= DISPLAY_AUTO_UPDATE_INTERVAL) {
       last_update = millis();
 
-      drawViews();
+      awaitDrawViews();
     }
 
     if (update_display && display_ready) {
       display_ready = false;
       update_display = false;
 
-      drawViews();
+      awaitDrawViews();
 
       display_ready = true;
     }
   }
-#endif
 #endif
 }
 
@@ -235,7 +246,13 @@ void loadMemory() {
 void saveMemory() {
 #if MULTI_CORE_OPERATIONS
   core1_paused = true;
+
   __sev();  // Signal event to wake Core 1 so WDT doesn't reset the MC
+
+  // Wait for Core 1 to finish its operation
+  while (core1_busy) {
+    sleep_us(10);  // To avoid excessive CPU usage
+  }
 #endif
 
   // Disable interrupts for flash operations
@@ -251,6 +268,7 @@ void saveMemory() {
 
 #if MULTI_CORE_OPERATIONS
   core1_paused = false;
+
   __sev();  // Ensure Core 1 sees the resume
 #endif
 }
