@@ -42,6 +42,7 @@ uint8_t current_profile = 0;
 
 bool should_skip = false;
 bool paired = false;
+int current_second = -1;  // Total amount of seconds
 #if !LED_DISABLED
 bool led_overridden = false;
 #endif
@@ -177,6 +178,7 @@ void loop() {
 
   // Functionalities that need device to be paired
   handleMessages();
+  handleTime();
   handlePotentiometers();
 }
 
@@ -442,6 +444,12 @@ void handleMessages() {
     incoming_message = { message, message.charAt(0), message.substring(1) };
 
     switch (incoming_message.key) {
+      // Set current_second
+      case 't':
+        current_second = incoming_message.value.toInt();
+
+        break;
+
       // Uploading to config memory
       case 'u':
         updateMemoryLayout(incoming_message.value);
@@ -460,6 +468,23 @@ void handleMessages() {
           ledSetColor(0, 0, 0);
 
         break;
+    }
+  }
+}
+
+void handleTime() {
+  if (!paired || current_second < 0) return;
+
+  static unsigned long last_millis = 0;
+  unsigned long current_millis = millis();
+
+  if (current_millis - last_millis >= 1000) {
+    last_millis += 1000;
+
+    current_second++;
+
+    if (current_second >= SECONDS_PER_DAY) {
+      current_second = 0;  // Reset at midnight
     }
   }
 }
@@ -916,7 +941,17 @@ void drawStatusPanel() {
 
   // Draw clock
 
-  const char* time_str = "12:34:56";
+  char time_str[9];  // 8 chars for HH:MM:SS plus null terminator
+
+  if (paired) {
+    int hours = current_second / 3600;
+    int minutes = (current_second % 3600) / 60;
+    int seconds = current_second % 60;
+
+    sprintf(time_str, "%02d:%02d:%02d", hours, minutes, seconds);
+  } else {
+    sprintf(time_str, "CLOCK");
+  }
 
   display.setFont(u8g2_font_t0_12b_tr);
   display.drawStr(bar_x + (bar_width / 2) - (display.getStrWidth(time_str) / 2),

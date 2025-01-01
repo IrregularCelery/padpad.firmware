@@ -17,6 +17,8 @@
 // responsive, primarily for display updates.
 #define MULTI_CORE_OPERATIONS true
 
+#define SECONDS_PER_DAY 86400
+
 /*---------------------------- Helper macros -----------------------------*/
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
@@ -29,7 +31,7 @@
 // e.g. PAIRING, CONNECTING, DISCONNECING, etc.
 #define LED_DISABLED false
 
-#define POTENTIOMETERS_DISABLED false
+#define POTENTIOMETERS_DISABLED true
 
 #define JOYSTICK_DISABLED false
 
