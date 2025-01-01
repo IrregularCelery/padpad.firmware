@@ -34,6 +34,11 @@ Message incoming_message = {
   .value = "",
 };
 
+#if MULTIPLE_PROFILES
+String profiles[] = { "Internal" };
+uint8_t current_profile = 0;
+#endif
+
 bool should_skip = false;
 bool paired = false;
 #if !LED_DISABLED
@@ -130,6 +135,9 @@ void setup() {
 
   // Load configuration from flash
   loadMemory();
+
+  // Load internal profiles on startup
+  updateProfilesMenu();
 
 #if MULTI_CORE_OPERATIONS
   multicore_launch_core1(core1_entry);
@@ -700,6 +708,11 @@ void rotaryEncoderClockwise() {
   menuResetInteractionTime();
 
   switch (current_view) {
+    case VIEW_HOME:
+      goToProfiles();
+
+      break;
+
     case VIEW_MENU:
       menuDown();
 
@@ -735,6 +748,11 @@ void rotaryEncoderCounterclockwise() {
   menuResetInteractionTime();
 
   switch (current_view) {
+    case VIEW_HOME:
+      goToProfiles();
+
+      break;
+
     case VIEW_MENU:
       menuUp();
 
@@ -845,6 +863,13 @@ void drawMenuView() {
   int offset = current_menu.offset;
 
   const int frame_title_padding = 8;
+
+#if DEBUG_DISPLAY
+  display.setCursor(DISPLAY_WIDTH - 22, 8);
+  display.print(index);
+  display.setCursor(DISPLAY_WIDTH - 8, 8);
+  display.print(offset);
+#endif
 
   // Current menu item icon
   display.setDrawColor(1);
@@ -1016,6 +1041,19 @@ int16_t drawWrappedString(String text, int16_t x, int16_t y, uint16_t max_width,
   return cursor_y;
 }
 
+void updateProfilesMenu() {
+  if (profiles_menu != nullptr) {
+    delete[] profiles_menu;
+  }
+
+  int profiles_count = ARRAY_SIZE(profiles);
+  profiles_menu = new MenuItem[profiles_count];
+
+  for (int i = 0; i < profiles_count; i++) {
+    profiles_menu[i].title = profiles[i].c_str();
+  }
+}
+
 // Menu navigation functions
 
 void goToHome() {
@@ -1026,13 +1064,18 @@ void goToHome() {
 }
 
 #if !DISPLAY_DISABLED
-void goToMenu(MenuItem* menu, int menu_size) {
+void goToMenu(MenuItem* menu, int menu_size, int index = 0) {
   storeLastMenu();
+
+  int offset = index + 1 - MENU_MAX_VISIBLE_ITEMS;
+
+  if (offset < 0) offset = 0;
 
   current_menu.items = menu;
   current_menu.size = menu_size;
-  current_menu.index = 0;
-  current_menu.offset = 0;
+  current_menu.index = index;
+  current_menu.offset = offset;
+
 
   current_view = VIEW_MENU;
 }
@@ -1048,6 +1091,18 @@ void goToPage() {
 #endif
 }
 
+void goToMainMenu() {
+#if !DISPLAY_DISABLED
+  goToMenu(main_menu, ARRAY_SIZE(main_menu));
+#endif
+}
+
+void goToProfiles() {
+#if !DISPLAY_DISABLED
+  goToMenu(profiles_menu, ARRAY_SIZE(profiles), current_profile);
+#endif
+}
+
 void storeLastMenu() {
   Menu* new_menu = new Menu;
 
@@ -1058,12 +1113,6 @@ void storeLastMenu() {
   } else {
     current_menu.last_menu = nullptr;
   }
-}
-
-void goToMainMenu() {
-#if !DISPLAY_DISABLED
-  goToMenu(main_menu, ARRAY_SIZE(main_menu));
-#endif
 }
 
 void menuUp() {
@@ -1154,12 +1203,11 @@ void menuBack() {
 
 // Menu callback functions
 // Should be returning a boolean: After selecting a menu item, if you want
-// to call the `callback` function and ignore rest of the items properties
-// such as submenu or page view, return false, otherwise return true.
-// E.g. `menuGoBack()` function, nothing should happen after callback.
+// to call the `callback` function and go back to previous menu,
+// return false. otherwise return true.
 
 #if !DISPLAY_DISABLED
-bool menuGoBack() {
+bool menuSelectBack() {
   return false;
 }
 

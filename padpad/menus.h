@@ -3,7 +3,7 @@
 #include "config.h"
 #if !DISPLAY_DISABLED
 // Forward declaration
-bool menuGoBack();
+bool menuSelectBack();
 bool menuSelectMouseSensitivity();
 bool menuSelectMouseToggle();
 bool menuSelectKeyboard();
@@ -15,7 +15,7 @@ MenuItem default_memory_submenu[] = {
   {
     .title = "No",
     .icon = x_mark_icon,
-    .callback = menuGoBack,
+    .callback = menuSelectBack,
   },
   {
     .title = "Yes",
@@ -39,7 +39,7 @@ MenuItem memory_submenu[] = {
   {
     .title = "Back",
     .icon = back_icon,
-    .callback = menuGoBack,
+    .callback = menuSelectBack,
   },
 };
 
@@ -57,7 +57,7 @@ MenuItem mouse_submenu[] = {
   {
     .title = "Back",
     .icon = back_icon,
-    .callback = menuGoBack,
+    .callback = menuSelectBack,
   },
 };
 
@@ -91,7 +91,10 @@ MenuItem main_menu[] = {
   {
     .title = "Exit",
     .icon = back_icon,
-    .callback = menuGoBack,
+    .callback = menuSelectBack,
   },
 };
 #endif
+
+// This menu will be filled dynamically
+MenuItem* profiles_menu = nullptr;

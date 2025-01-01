@@ -37,6 +37,21 @@
 
 #define DISPLAY_DISABLED false
 
+/*--------------------------- Profile settings ---------------------------*/
+
+// changing a profile doesn't inherently change things here, other than
+// telling the software, a profile change was happened.
+// Also changing the current profile isn't available until the device
+// and software are paired!
+
+// You can have up to 256 different profiles. Profile 0 AKA profiles[0]
+// is reserved for device's internal profile in which, keyboard buttons
+// are read from its memory. You still can bind other interactions to
+// keys in that profile, but you need to set it in the software and
+// upload to device.
+
+#define MULTIPLE_PROFILES true
+
 /*--------------------------- Buttons settings ---------------------------*/
 
 struct Layout {
@@ -286,6 +301,10 @@ Memory default_memory = {
 // This is only for testing the rotary encoder and getting its values,
 // if this is true, the rest of the functionalities are disabled!
 #define DEBUG_ROTARY_ENCODER false
+
+// This is only for testing the display and showing some debug text on it,
+// if this is true, you're still able to use the rest of the functionalities!
+#define DEBUG_DISPLAY false
 
 /*------------------------------- Warnings -------------------------------*/
 
