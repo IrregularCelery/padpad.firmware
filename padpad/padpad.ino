@@ -42,7 +42,7 @@ uint8_t current_profile = 0;
 
 bool should_skip = false;
 bool paired = false;
-int current_second = 0;  // Total amount of seconds
+int current_second = -1;  // Total amount of seconds
 #if !LED_DISABLED
 bool led_overridden = false;
 #endif
@@ -377,6 +377,8 @@ void pair() {
 
   paired = true;
 
+  requestStartupData();
+
   int color[3] = { 0, 255, 0 };
 
   ledFlash(2, 150, color);
@@ -384,6 +386,8 @@ void pair() {
 
 void unpair() {
   paired = false;
+  current_second = -1;
+  current_profile = 0;
 
   int color[3] = { 255, 0, 0 };
 
@@ -404,14 +408,14 @@ void pairCheck() {
       }
     }
 
-    ledSetColor(0, 0, 255);
+    ledSetColor(0, 0, 255);  // Blue = Pairing state
 
-    static unsigned long pairingTimer = 0;
+    static unsigned long pairing_timer = 0;
 
-    if ((millis() - pairingTimer) >= PAIR_CHECK_INTERVAL) {
+    if ((millis() - pairing_timer) >= PAIR_CHECK_INTERVAL) {
       serialSend("READY", "Firmware is ready to pair with the app!");
 
-      pairingTimer = millis();
+      pairing_timer = millis();
     }
 
     should_skip = true;
@@ -430,11 +434,15 @@ void pairCheck() {
 
 #if !LED_DISABLED
     if (!led_overridden)
-      ledSetColor(0, 255, 0);
+      ledSetColor(0, 255, 0);  // Green = Paired state
 #endif
 
     should_skip = false;
   }
+}
+
+void requestStartupData() {
+  serialSend("REQUEST", "STARTUP");
 }
 
 void ledSetColor(int r, int g, int b) {
@@ -452,12 +460,14 @@ void ledSetColor(int r, int g, int b) {
 // Duration: delay between each on and off so `delay(duration / 2)`
 void ledFlash(int count, int duration, int color[3]) {
 #if !LED_DISABLED
-  for (int i = 0; i < count; i++) {
-    ledSetColor(color[0], color[1], color[2]);
-    delay(duration / 2);
-    ledSetColor(0, 0, 0);
-    delay(duration / 2);
-  }
+  ledSetColor(color[0], color[1], color[2]);
+
+  // for (int i = 0; i < count; i++) {
+  //   ledSetColor(color[0], color[1], color[2]);
+  //   delay(duration / 2);
+  //   ledSetColor(0, 0, 0);
+  //   delay(duration / 2);
+  // }
 #endif
 }
 
@@ -891,6 +901,9 @@ void drawStatusPanel() {
   display.setBitmapMode(1);
   display.setDrawColor(1);
 
+  display.setCursor(0, 10);
+  display.print(current_second);
+
   int max_icon_count = 5;
 
   int16_t bar_width = (MINI_ICON_WIDTH * max_icon_count)
@@ -1246,7 +1259,11 @@ void updateProfilesMenu() {
   profiles_menu = new MenuItem[profiles_count];
 
   auto callback = []() -> bool {
-    current_profile = current_menu.index;
+    int index = 0;
+
+    if (paired) index = current_menu.index;
+
+    current_profile = index;
 
     return false;
   };
