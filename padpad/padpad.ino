@@ -382,8 +382,10 @@ void pair() {
 
   requestStartupData();
 
-  // FIXME: Make this work on first time flashing
+// FIXME: Make this work on first time flashing
+#if !LED_DISABLED
   rgb.flash(3, Color(0, 255, 0), 75);
+#endif
 }
 
 void unpair() {
@@ -391,7 +393,9 @@ void unpair() {
   current_second = -1;
   current_profile = 0;
 
+#if !LED_DISABLED
   rgb.flash(3, Color(255, 0, 0), 75);
+#endif
 }
 
 void pairCheck() {
@@ -413,7 +417,9 @@ void pairCheck() {
     if ((millis() - pairing_timer) >= PAIR_CHECK_INTERVAL) {
       serialSend("READY", "Firmware is ready to pair with the app!");
       // FIXME: Make this work along unpair `rgb.flash()`
+      // #if !LED_DISABLED
       // rgb.flash(1, Color(0, 0, 255), 300);
+      // #endif
 
       pairing_timer = millis();
     }
@@ -469,10 +475,12 @@ void handleMessages() {
 
       // Test message to change LED's color
       case 'l':
+#if !LED_DISABLED
         if (incoming_message.value == "1")
           rgb.override(Color(255, 255, 0));
         else
           rgb.override();
+#endif
 
         break;
     }
@@ -495,10 +503,12 @@ void handleTime() {
 }
 
 void handleLED() {
+#if !LED_DISABLED
   Color current_color = rgb.tick();
 
   led.setPixelColor(0, led.Color(current_color.r, current_color.g, current_color.b));
   led.show();
+#endif
 }
 
 void handleButtons() {
