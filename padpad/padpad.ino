@@ -135,6 +135,10 @@ void setup() {
 
   Serial.begin(BAUD_RATE);
 
+#if DEBUG_RESET_MEMORY
+  flash_range_erase(FLASH_END_OFFSET, FLASH_SECTOR_SIZE);
+#endif
+
   // Load configuration from flash
   loadMemory();
 
@@ -259,6 +263,7 @@ void loadMemory() {
 
 #if !DISPLAY_DISABLED
     setMessage("Memory loading failed!\nLoaded defaults instead", "Error", 30 * 1000);
+    goToPage();
 #endif
 
     serialSend("MEMORY", "Could not retrieve config memory data! Resetting to defaults...");

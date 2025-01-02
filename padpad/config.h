@@ -294,6 +294,9 @@ Memory default_memory = {
 // the first one in order, will be running.
 // MAKE SURE TO SET THEM TO FALSE IN THE END OF TESTING!
 
+// If this is true, the memory will be reset to default on startup
+#define DEBUG_RESET_MEMORY false
+
 // This is only for testing the buttons and getting their IDs and stuff,
 // if this is true, the rest of the functionalities are disabled!
 #define DEBUG_BUTTONS false
