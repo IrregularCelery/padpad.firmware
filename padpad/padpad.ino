@@ -42,7 +42,7 @@ uint8_t current_profile = 0;
 
 bool should_skip = false;
 bool paired = false;
-int current_second = -1;  // Total amount of seconds
+int current_second = 0;  // Total amount of seconds
 #if !LED_DISABLED
 bool led_overridden = false;
 #endif
@@ -473,8 +473,6 @@ void handleMessages() {
 }
 
 void handleTime() {
-  if (!paired || current_second < 0) return;
-
   static unsigned long last_millis = 0;
   unsigned long current_millis = millis();
 
@@ -707,8 +705,9 @@ void handleRotaryEncoder() {
 
 void handleDisplay() {
 #if !DISPLAY_DISABLED
-  if (current_view != VIEW_PAGE && page_data.value.getType() != DynamicRef::None) {
+  if (current_view != VIEW_PAGE && page_data.title.length() > 0) {
     page_data.value.reset();
+    page_data.title = "";
     page_data.description = "";
   }
 
@@ -1024,29 +1023,77 @@ void drawMenuView() {
 
 void drawPageView() {
 #if !DISPLAY_DISABLED
-  const char* title = current_menu.items[current_menu.index].title;
+  bool is_message = false;
+  const char* message_indicator = "msg:";
 
-  int16_t title_width = display.getUTF8Width(title);
+  String title = page_data.title;
+  String description = page_data.description;
+
+  // If title contains `message_indicator` AKA "msg:", the page is considered message_box
+  int message_prefix_index = title.indexOf(message_indicator);
+
+  if (message_prefix_index != -1) {
+    is_message = true;
+
+    title = title.substring(message_prefix_index + strlen(message_indicator));
+  }
+
+  int16_t title_width = display.getUTF8Width(title.c_str());
 
   int16_t title_x = (DISPLAY_WIDTH - title_width) / 2;
   int16_t title_y = 8;
 
+  if (is_message) title_y += DISPLAY_PADDING;
+
   int16_t line_start = DISPLAY_PADDING * 2;
 
-  display.drawStr(title_x, title_y, title);
+  display.drawStr(title_x, title_y, title.c_str());
+
+  if (is_message) title_y += 1;
 
   display.setDrawColor(2);
   display.drawHLine(line_start, title_y + 1, DISPLAY_WIDTH - (line_start * 2));
   display.setDrawColor(1);
 
+  if (is_message) {
+    display.setDrawColor(1);
+    display.drawRFrame((DISPLAY_PADDING / 2), (DISPLAY_PADDING / 2),
+                       DISPLAY_WIDTH - DISPLAY_PADDING,
+                       DISPLAY_HEIGHT - DISPLAY_PADDING, 9);
+  }
+
   display.setFont(u8g2_font_spleen5x8_mr);
 
-  String description = page_data.description;
-  int16_t cursor_y = drawWrappedString(description, DISPLAY_PADDING,
+  int16_t description_padding = 0;
+
+  if (is_message) description_padding = DISPLAY_PADDING;
+
+  int16_t cursor_y = drawWrappedString(description, description_padding + DISPLAY_PADDING,
                                        title_y + DISPLAY_PADDING + 8,
                                        DISPLAY_WIDTH - (DISPLAY_PADDING * 2), 10, 2);
 
   display.setFont(DISPLAY_DEFAULT_FONT);
+
+  // If the page is a `message_box`, ignore checking `page_data.value`
+  if (is_message) {
+    // Confirmation button
+    int16_t button_width = display.getStrWidth(DISPLAY_CONFIRM_BUTTON_TEXT);
+    int16_t button_height = 9;
+    int16_t button_x = DISPLAY_WIDTH - button_width - (DISPLAY_PADDING * 2.5);
+    int16_t button_y = DISPLAY_HEIGHT - (DISPLAY_PADDING * 2);
+    int8_t button_padding = 1;
+
+    display.drawRBox(button_x - (button_padding * 4),
+                     button_y - button_height,
+                     button_width + (button_padding * 8),
+                     button_height + (button_padding * 2), 4);
+
+    display.setDrawColor(0);
+    display.drawStr(button_x, button_y, DISPLAY_CONFIRM_BUTTON_TEXT);
+    display.setDrawColor(1);
+
+    return;
+  }
 
   switch (page_data.value.getType()) {
     case DynamicRef::Bool:
@@ -1095,11 +1142,14 @@ void drawPageView() {
         int8_t box_height = 9;
         int8_t box_padding = 1;
 
+        display.setFont(u8g2_font_t0_12_tr);
         display.drawStr((DISPLAY_PADDING * 2), value_y, float_title);
 
+        display.setFont(u8g2_font_t0_12b_tr);
         display.setCursor(value_x, value_y);
         display.print((float)(page_data.value));
         display.setDrawColor(1);
+        display.setFont(DISPLAY_DEFAULT_FONT);
 
         break;
       }
@@ -1216,8 +1266,21 @@ void goToPage() {
   // To store current_menu as last_menu for going back
   storeLastMenu();
 
+  if (page_data.title.length() == 0) {
+    page_data.title = current_menu.items[current_menu.index].title;
+  }
+
   current_view = VIEW_PAGE;
   menu_arrow_state = 0;
+#endif
+}
+
+void goToMessage(String message, String title = "Message") {
+#if !DISPLAY_DISABLED
+  page_data.title = "msg:" + title;
+  page_data.description = message;
+
+  goToPage();
 #endif
 }
 
@@ -1229,6 +1292,14 @@ void goToMainMenu() {
 
 void goToProfiles() {
 #if !DISPLAY_DISABLED
+  if (current_view != VIEW_HOME) return;
+
+  if (!paired) {
+    goToMessage("Cannot load profiles!\nDevice isn't paired yet", "Error");
+
+    return;
+  }
+
   goToMenu(profiles_menu, ARRAY_SIZE(profiles), current_profile);
 #endif
 }

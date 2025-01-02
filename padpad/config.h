@@ -187,6 +187,7 @@ struct Menu {
 
 struct PageData {
   DynamicRef value;
+  String title = "";
   String description = "";  // Maximum 24 characters per line for DISPLAY_WITH 128
 };
 
@@ -202,6 +203,7 @@ struct PageData {
 #define DISPLAY_PADDING 4
 
 #define DISPLAY_DEFAULT_FONT u8g2_font_6x10_tr
+#define DISPLAY_CONFIRM_BUTTON_TEXT "OK"
 #define DISPLAY_TRUE_BUTTON_TEXT "Enable"
 #define DISPLAY_FALSE_BUTTON_TEXT "Disable"
 
