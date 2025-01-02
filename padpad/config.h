@@ -188,7 +188,7 @@ struct Menu {
 struct PageData {
   DynamicRef value;
   String title = "";
-  String description = "";  // Maximum 24 characters per line for DISPLAY_WITH 128
+  String description = "";  // Maximum 24 characters per line for DISPLAY_WITH 128 (23 for goToMessage())
 };
 
 // Pins

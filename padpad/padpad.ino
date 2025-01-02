@@ -233,6 +233,17 @@ void requestDisplayUpdate() {
 #endif
 }
 
+// Recommended: If you're not showing the message from a menu item, Use `goToMessage()` instead.
+// If you use `setMessage()` you need to handle it right away using `goToPage()`
+// if the message is being set from a menu callback function, you don't need to
+// call `goToPage()` Just return `true` in the callback function.
+void setMessage(String message, String title = "Message", unsigned long timeout = 0) {
+  if (timeout > 0) display_view_timeout = timeout;
+
+  page_data.title = "msg:" + title;
+  page_data.description = message;
+}
+
 // ------------- Config memory functions ------------ //
 
 void loadMemory() {
@@ -245,6 +256,10 @@ void loadMemory() {
   if (memory.sector_check != SECTOR_CHECK) {
     // Set to default config memory
     defaultMemory();
+
+#if !DISPLAY_DISABLED
+    setMessage("Memory loading failed!\nLoaded defaults instead", "Error", 30 * 1000);
+#endif
 
     serialSend("MEMORY", "Could not retrieve config memory data! Resetting to defaults...");
 
@@ -283,6 +298,10 @@ void saveMemory() {
   core1_paused = false;
 
   __sev();  // Ensure Core 1 sees the resume
+#endif
+
+#if !DISPLAY_DISABLED
+  setMessage("Memory has been saved.", "Completed");
 #endif
 }
 
@@ -1240,6 +1259,10 @@ void goToHome() {
 #if !DISPLAY_DISABLED
   current_view = VIEW_HOME;
   menu_arrow_state = 0;
+
+  if (display_view_timeout != DISPLAY_DEFAULT_VIEW_TIMEOUT) {
+    display_view_timeout = DISPLAY_DEFAULT_VIEW_TIMEOUT;
+  }
 #endif
 }
 
@@ -1275,11 +1298,9 @@ void goToPage() {
 #endif
 }
 
-void goToMessage(String message, String title = "Message") {
+void goToMessage(String message, String title = "Message", unsigned long timeout = 0) {
 #if !DISPLAY_DISABLED
-  page_data.title = "msg:" + title;
-  page_data.description = message;
-
+  setMessage(message, title, timeout);
   goToPage();
 #endif
 }
@@ -1295,7 +1316,7 @@ void goToProfiles() {
   if (current_view != VIEW_HOME) return;
 
   if (!paired) {
-    goToMessage("Cannot load profiles!\nDevice isn't paired yet", "Error");
+    goToMessage("Cannot load profiles!\nDevice isn't paired yet", "Error", 1000);
 
     return;
   }
@@ -1407,7 +1428,8 @@ void menuBack() {
 // Menu callback functions
 // Should be returning a boolean: After selecting a menu item, if you want
 // to call the `callback` function and go back to previous menu,
-// return false. otherwise return true.
+// return `false`. otherwise return `true`.
+// NOTE: Most return `true` if the callback has `setMessage()`
 
 #if !DISPLAY_DISABLED
 bool menuSelectBack() {
@@ -1451,12 +1473,12 @@ bool menuSelectPotentiometers() {
 bool menuSelectSaveMemory() {
   saveMemory();
 
-  return false;
+  return true;
 }
 
 bool menuSelectDefaultMemory() {
   defaultMemory();
 
-  return false;
+  return true;
 }
 #endif
