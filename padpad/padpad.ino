@@ -15,6 +15,7 @@
 Adafruit_Keypad buttons = Adafruit_Keypad(makeKeymap(generateKeymap(ROWS, COLS)), ROW_PINS, COL_PINS, ROWS, COLS);
 #if !LED_DISABLED
 Adafruit_NeoPixel led(1, LED_PIN);
+RGBController rgb;
 #endif
 #if !JOYSTICK_DISABLED
 Button joystick_button(JOYSTICK_PIN_BUTTON);
@@ -94,7 +95,8 @@ void setup() {
 #if !LED_DISABLED
   led.begin();
   led.setBrightness(30);
-  ledSetColor(0, 0, 0);
+  led.setPixelColor(0, 0, 0, 0);
+  led.show();
 #endif
 
 #if !POTENTIOMETERS_DISABLED
@@ -169,6 +171,7 @@ void loop() {
   // ----- END DEBUGGING ----- //
 
   // Functionalities that work without needing device to be paired
+  handleLED();
   handleButtons();
   handleJoystick();
   handleRotaryEncoder();
@@ -379,9 +382,8 @@ void pair() {
 
   requestStartupData();
 
-  int color[3] = { 0, 255, 0 };
-
-  ledFlash(2, 150, color);
+  // FIXME: Make this work on first time flashing
+  rgb.flash(3, Color(0, 255, 0), 75);
 }
 
 void unpair() {
@@ -389,9 +391,7 @@ void unpair() {
   current_second = -1;
   current_profile = 0;
 
-  int color[3] = { 255, 0, 0 };
-
-  ledFlash(2, 150, color);
+  rgb.flash(3, Color(255, 0, 0), 75);
 }
 
 void pairCheck() {
@@ -408,12 +408,12 @@ void pairCheck() {
       }
     }
 
-    ledSetColor(0, 0, 255);  // Blue = Pairing state
-
     static unsigned long pairing_timer = 0;
 
     if ((millis() - pairing_timer) >= PAIR_CHECK_INTERVAL) {
       serialSend("READY", "Firmware is ready to pair with the app!");
+      // FIXME: Make this work along unpair `rgb.flash()`
+      // rgb.flash(1, Color(0, 0, 255), 300);
 
       pairing_timer = millis();
     }
@@ -432,10 +432,9 @@ void pairCheck() {
       return;
     }
 
-#if !LED_DISABLED
-    if (!led_overridden)
-      ledSetColor(0, 255, 0);  // Green = Paired state
-#endif
+    // #if !LED_DISABLED
+    //     ledSetColor(0, 255, 0);  // Green = Paired state
+    // #endif
 
     should_skip = false;
   }
@@ -443,32 +442,6 @@ void pairCheck() {
 
 void requestStartupData() {
   serialSend("REQUEST", "STARTUP");
-}
-
-void ledSetColor(int r, int g, int b) {
-#if !LED_DISABLED
-  if (r != 0 || g != 0 || b != 0)
-    led_overridden = true;
-  else
-    led_overridden = false;
-
-  led.setPixelColor(0, led.Color(r, g, b));
-  led.show();
-#endif
-}
-
-// Duration: delay between each on and off so `delay(duration / 2)`
-void ledFlash(int count, int duration, int color[3]) {
-#if !LED_DISABLED
-  ledSetColor(color[0], color[1], color[2]);
-
-  // for (int i = 0; i < count; i++) {
-  //   ledSetColor(color[0], color[1], color[2]);
-  //   delay(duration / 2);
-  //   ledSetColor(0, 0, 0);
-  //   delay(duration / 2);
-  // }
-#endif
 }
 
 void handleMessages() {
@@ -497,9 +470,9 @@ void handleMessages() {
       // Test message to change LED's color
       case 'l':
         if (incoming_message.value == "1")
-          ledSetColor(255, 255, 0);
+          rgb.override(Color(255, 255, 0));
         else
-          ledSetColor(0, 0, 0);
+          rgb.override();
 
         break;
     }
@@ -519,6 +492,13 @@ void handleTime() {
       current_second = 0;  // Reset at midnight
     }
   }
+}
+
+void handleLED() {
+  Color current_color = rgb.tick();
+
+  led.setPixelColor(0, led.Color(current_color.r, current_color.g, current_color.b));
+  led.show();
 }
 
 void handleButtons() {
@@ -1060,7 +1040,7 @@ void drawMenuView() {
 
 void drawPageView() {
 #if !DISPLAY_DISABLED
-  bool is_message = false;
+  bool message_box = false;
   const char* message_indicator = "msg:";
 
   String title = page_data.title;
@@ -1070,7 +1050,7 @@ void drawPageView() {
   int message_prefix_index = title.indexOf(message_indicator);
 
   if (message_prefix_index != -1) {
-    is_message = true;
+    message_box = true;
 
     title = title.substring(message_prefix_index + strlen(message_indicator));
   }
@@ -1080,19 +1060,19 @@ void drawPageView() {
   int16_t title_x = (DISPLAY_WIDTH - title_width) / 2;
   int16_t title_y = 8;
 
-  if (is_message) title_y += DISPLAY_PADDING;
+  if (message_box) title_y += DISPLAY_PADDING;
 
   int16_t line_start = DISPLAY_PADDING * 2;
 
   display.drawStr(title_x, title_y, title.c_str());
 
-  if (is_message) title_y += 1;
+  if (message_box) title_y += 1;
 
   display.setDrawColor(2);
   display.drawHLine(line_start, title_y + 1, DISPLAY_WIDTH - (line_start * 2));
   display.setDrawColor(1);
 
-  if (is_message) {
+  if (message_box) {
     display.setDrawColor(1);
     display.drawRFrame((DISPLAY_PADDING / 2), (DISPLAY_PADDING / 2),
                        DISPLAY_WIDTH - DISPLAY_PADDING,
@@ -1103,7 +1083,7 @@ void drawPageView() {
 
   int16_t description_padding = 0;
 
-  if (is_message) description_padding = DISPLAY_PADDING;
+  if (message_box) description_padding = DISPLAY_PADDING;
 
   int16_t cursor_y = drawWrappedString(description, description_padding + DISPLAY_PADDING,
                                        title_y + DISPLAY_PADDING + 8,
@@ -1112,7 +1092,7 @@ void drawPageView() {
   display.setFont(DISPLAY_DEFAULT_FONT);
 
   // If the page is a `message_box`, ignore checking `page_data.value`
-  if (is_message) {
+  if (message_box) {
     // Confirmation button
     int16_t button_width = display.getStrWidth(DISPLAY_CONFIRM_BUTTON_TEXT);
     int16_t button_height = 9;
