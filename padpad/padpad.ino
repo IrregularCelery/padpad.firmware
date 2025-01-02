@@ -95,8 +95,8 @@ void setup() {
 #if !LED_DISABLED
   led.begin();
   led.setBrightness(30);
-  led.setPixelColor(0, 0, 0, 0);
-  led.show();
+
+  rgb.flash(2, Color(255, 255, 255), 250);
 #endif
 
 #if !POTENTIOMETERS_DISABLED
