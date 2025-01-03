@@ -37,7 +37,10 @@ uint8_t current_profile = 0;
 
 bool should_skip = false;
 bool paired = false;
-int current_second = -1;  // Total amount of seconds
+
+int current_second = -1;   // Total amount of seconds
+String current_date = "";  // Date in "%b. %d" format
+
 #if !LED_DISABLED
 bool led_overridden = false;
 #endif
@@ -384,6 +387,7 @@ void pair() {
 void unpair() {
   paired = false;
   current_second = -1;
+  current_date = "";
   current_profile = 0;
 
 #if !LED_DISABLED
@@ -460,13 +464,19 @@ void handleMessages() {
 
       switch (incoming_message.key) {
         // Set current_second
-        case 't':
+        case 't':  // "time"
           current_second = incoming_message.value.toInt();
 
           break;
 
+        // Set current_date
+        case 'd':  // "date"
+          current_date = incoming_message.value;
+
+          break;
+
         // Uploading to config memory
-        case 'u':
+        case 'u':  // "upload"
           updateMemoryLayout(incoming_message.value);
 
           // TODO: Handle this by a different incoming_message
@@ -887,9 +897,6 @@ void drawStatusPanel() {
   display.setBitmapMode(1);
   display.setDrawColor(1);
 
-  display.setCursor(0, 10);
-  display.print(current_second);
-
   int max_icon_count = 5;
 
   int16_t bar_width = (MINI_ICON_WIDTH * max_icon_count)
@@ -961,9 +968,10 @@ void drawStatusPanel() {
   }
 #endif
 
-  // Draw clock
+  // Draw Date & Time
 
   char time_str[9];  // 8 chars for HH:MM:SS plus null terminator
+  char date_str[8];  // 6 chars for "Jan. 01" plus null terminator
 
   if (paired) {
     int hours = current_second / 3600;
@@ -971,15 +979,40 @@ void drawStatusPanel() {
     int seconds = current_second % 60;
 
     sprintf(time_str, "%02d:%02d:%02d", hours, minutes, seconds);
+    sprintf(date_str, current_date.c_str());
   } else {
     sprintf(time_str, "CLOCK");
+    sprintf(date_str, "DATE");
   }
 
   display.setFont(u8g2_font_t0_12b_tr);
-  display.drawStr(bar_x + (bar_width / 2) - (display.getStrWidth(time_str) / 2),
-                  bar_height + display.getMaxCharHeight() + 1 /* padding */,
+
+  int16_t time_str_width = display.getStrWidth(time_str);
+  int16_t time_str_height = display.getMaxCharHeight();
+
+  display.drawStr(bar_x + (bar_width / 2) - (time_str_width / 2),
+                  bar_height + time_str_height + 1 /* padding */,
                   time_str);
+
+  display.setFont(u8g2_font_chikita_tr);
+
+  int16_t date_str_width = display.getStrWidth(date_str);
+  int16_t date_str_height = display.getMaxCharHeight();
+
+  display.drawRBox(bar_x + (bar_width / 2) - (date_str_width / 2) - (DISPLAY_PADDING * 0.75),
+                   bar_height + time_str_height + 3 /* padding */,
+                   date_str_width + (DISPLAY_PADDING * 1.5),
+                   date_str_height - 1 /* padding */,
+                   2);
+
+  display.setDrawColor(0);
+  display.drawStr(bar_x + (bar_width / 2) - (date_str_width / 2),
+                  bar_height + time_str_height + date_str_height + 1 /* padding */,
+                  date_str);
+  display.setDrawColor(1);
+
   display.setFont(DISPLAY_DEFAULT_FONT);
+
 #endif
 }
 
