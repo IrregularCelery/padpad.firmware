@@ -29,12 +29,6 @@ U8G2_ST7920_128X64_F_SW_SPI display(U8G2_R0, DISPLAY_E_PIN, DISPLAY_RW_PIN, DISP
 
 Memory memory;
 
-Message incoming_message = {
-  .message = "",
-  .key = 0,
-  .value = "",
-};
-
 #if MULTIPLE_PROFILES
 // TODO: Remove test profiles
 String profiles[] = { "Internal", "Profile 1", "Profile 2", "Profile 3" };
@@ -400,15 +394,25 @@ void unpair() {
 
 void pairCheck() {
   if (!paired) {
+    static String buffer = "";
+
     if (Serial.available()) {
-      String message = Serial.readString();
+      char c = Serial.read();
 
-      if (message == "p1") {
-        pair();
+      if (c == '\n') {  // Messages should end with a newline ('\n')
+        if (buffer == "p1") {
+          pair();
 
-        should_skip = true;
+          should_skip = true;
 
-        return;
+          buffer = "";
+
+          return;
+        }
+
+        buffer = "";  // Clear the buffer for the next message
+      } else {
+        buffer += c;  // Append the character to the buffer
       }
     }
 
@@ -451,38 +455,39 @@ void requestStartupData() {
 }
 
 void handleMessages() {
-  if (Serial.available()) {
-    String message = Serial.readString();
+  static String buffer = "";
 
-    incoming_message = { message, message.charAt(0), message.substring(1) };
+  while (Serial.available()) {
+    char c = Serial.read();
 
-    switch (incoming_message.key) {
-      // Set current_second
-      case 't':
-        current_second = incoming_message.value.toInt();
+    if (c == '\n') {  // Incoming messages should end with a newline ('\n')
+      Message incoming_message = {
+        .message = buffer,
+        .key = buffer.charAt(0),
+        .value = buffer.substring(1),
+      };
 
-        break;
+      switch (incoming_message.key) {
+        // Set current_second
+        case 't':
+          current_second = incoming_message.value.toInt();
 
-      // Uploading to config memory
-      case 'u':
-        updateMemoryLayout(incoming_message.value);
+          break;
 
-        // TODO: Handle this by a different incoming_message
-        // Upload to flash
-        saveMemory();
+        // Uploading to config memory
+        case 'u':
+          updateMemoryLayout(incoming_message.value);
 
-        break;
+          // TODO: Handle this by a different incoming_message
+          // Upload to flash
+          saveMemory();
 
-      // Test message to change LED's color
-      case 'l':
-#if !LED_DISABLED
-        if (incoming_message.value == "1")
-          rgb.override(Color(255, 255, 0));
-        else
-          rgb.override();
-#endif
+          break;
+      }
 
-        break;
+      buffer = "";  // Clear the buffer for the next message
+    } else {
+      buffer += c;  // Append the character to the buffer
     }
   }
 }
