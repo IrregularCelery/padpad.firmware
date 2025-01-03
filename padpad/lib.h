@@ -492,7 +492,7 @@ private:
       end_color_ = GREEN;              // Change color to Green
     } else if (end_color_.g == 255) {  // End of color green
       end_color_ = RED;                // Change color to Red
-    } else if (end_color_.r = 255) {   // End of color Red
+    } else if (end_color_.r == 255) {  // End of color Red
       end_color_ = BLUE;               // Change color to Blue
     }
 
