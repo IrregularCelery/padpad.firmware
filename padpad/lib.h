@@ -306,7 +306,9 @@ public:
     start_color_ = RED;
     end_color_ = BLUE;
     duration_ = transition_duration;
-    start_time_ = millis();
+    elapsed_time_ = 0;
+    last_update_time_ = millis();
+    paused_ = false;
 
     overridden_ = false;
     transitioning_from_override_ = false;
@@ -315,6 +317,16 @@ public:
     override_timeout_ = 0;
 
     flashing_ = false;
+  }
+
+  void pause() {
+    paused_ = true;
+  }
+
+  void resume() {
+    paused_ = false;
+
+    last_update_time_ = millis();
   }
 
   // Parameter `delay` means the delay between each flashing (in ms)
@@ -329,7 +341,7 @@ public:
     current_flash_ = 0;
 
     single_flash_duration_ = delay;
-    flash_start_time_ = millis();
+    flash_elapsed_time_ = 0;
   }
 
   // Color of RGBController will be overridden until `timeout` runs out
@@ -341,10 +353,9 @@ public:
 
     transitioning_to_override_ = true;
 
-    override_start_time_ = millis();
+    override_elapsed_time_ = 0;
     override_duration_ = transition_duration;
     override_timeout_ = timeout;
-    start_time_ = millis();
   }
 
   void override() {
@@ -353,15 +364,14 @@ public:
   }
 
   Color tick() {
-    unsigned long current_time = millis();
+    updateElapsedTime();
 
     if (flashing_) {
-
-      float flash_progress = (float)(current_time - flash_start_time_) / single_flash_duration_;
+      float flash_progress = (float)flash_elapsed_time_ / single_flash_duration_;
 
       if (flash_progress >= 1.0f) {
         current_flash_++;
-        flash_start_time_ = current_time;
+        flash_elapsed_time_ = 0;
 
         if (current_flash_ >= flash_count_) {
           flashing_ = false;
@@ -383,11 +393,12 @@ public:
     }
 
     if (transitioning_to_override_) {
-      float progress = min(1.0f, (float)(current_time - start_time_) / override_duration_);
+      float progress = min(1.0f, (float)override_elapsed_time_ / override_duration_);
 
       if (progress >= 1.0f) {
         transitioning_from_override_ = false;
         overridden_ = true;
+        override_elapsed_time_ = 0;
       }
 
       return Color(
@@ -397,11 +408,11 @@ public:
     }
 
     if (overridden_) {
-      if (override_timeout_ > 0 && (current_time - override_start_time_) >= override_timeout_) {
+      if (override_timeout_ > 0 && override_elapsed_time_ >= override_timeout_) {
         overridden_ = false;
         transitioning_from_override_ = true;
 
-        start_time_ = current_time;
+        elapsed_time_ = 0;
 
         start_color_ = override_color_;
         end_color_ = getCurrentColor();
@@ -411,11 +422,10 @@ public:
     }
 
     if (transitioning_from_override_) {
-      float progress = min(1.0f, (float)(current_time - start_time_) / override_duration_);
+      float progress = min(1.0f, (float)elapsed_time_ / override_duration_);
 
       if (progress >= 1.0f) {
         transitioning_from_override_ = false;
-        start_time_ = current_time;
       }
 
       return Color(
@@ -424,7 +434,7 @@ public:
         start_color_.b + (end_color_.b - start_color_.b) * progress);
     }
 
-    float progress = min(1.0f, (float)(current_time - start_time_) / duration_);
+    float progress = min(1.0f, (float)elapsed_time_ / duration_);
 
     Color current_color = getCurrentColor();
 
@@ -442,8 +452,11 @@ private:
   Color end_color_;
   Color last_color_;
 
-  unsigned long start_time_;
+  unsigned long elapsed_time_;
+  unsigned long last_update_time_;
   unsigned long duration_;
+
+  bool paused_;
 
   // ---------- Override ---------- //
 
@@ -453,7 +466,7 @@ private:
   bool transitioning_from_override_;
   bool transitioning_to_override_;
 
-  unsigned long override_start_time_;
+  unsigned long override_elapsed_time_;
   unsigned long override_duration_;
   unsigned long override_timeout_;
 
@@ -468,16 +481,33 @@ private:
   int flash_count_;
   int current_flash_;
 
-  unsigned long flash_start_time_;
-  unsigned long flash_duration_;
+  unsigned long flash_elapsed_time_;
   unsigned long single_flash_duration_;
 
   const Color RED{ 255, 0, 0 };
   const Color GREEN{ 0, 255, 0 };
   const Color BLUE{ 0, 0, 255 };
 
+  void updateElapsedTime() {
+    if (!paused_) {
+      unsigned long current_time = millis();
+      unsigned long delta_time = current_time - last_update_time_;
+
+      last_update_time_ = current_time;
+
+      // Update appropriate timer based on the current state
+      if (flashing_) {
+        flash_elapsed_time_ += delta_time;
+      } else if (overridden_ || transitioning_to_override_) {
+        override_elapsed_time_ += delta_time;
+      } else {
+        elapsed_time_ += delta_time;
+      }
+    }
+  }
+
   Color getCurrentColor() {
-    float progress = min(1.0f, (float)(millis() - start_time_) / duration_);
+    float progress = min(1.0f, (float)elapsed_time_ / duration_);
 
     return Color(
       start_color_.r + ((end_color_.r - start_color_.r) * progress),
@@ -496,6 +526,6 @@ private:
       end_color_ = BLUE;               // Change color to Blue
     }
 
-    start_time_ = millis();
+    elapsed_time_ = 0;
   }
 };

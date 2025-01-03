@@ -88,7 +88,7 @@ void setup() {
 
 #if !LED_DISABLED
   led.begin();
-  led.setBrightness(30);
+  led.setBrightness(50);
 
   rgb.flash(2, Color(255, 255, 255), 250);
 #endif
@@ -376,7 +376,6 @@ void pair() {
 
   requestStartupData();
 
-// FIXME: Make this work on first time flashing
 #if !LED_DISABLED
   rgb.flash(3, Color(0, 255, 0), 75);
 #endif
@@ -420,10 +419,6 @@ void pairCheck() {
 
     if ((millis() - pairing_timer) >= PAIR_CHECK_INTERVAL) {
       serialSend("READY", "Firmware is ready to pair with the app!");
-      // FIXME: Make this work along unpair `rgb.flash()`
-      // #if !LED_DISABLED
-      // rgb.flash(1, Color(0, 0, 255), 300);
-      // #endif
 
       pairing_timer = millis();
     }
@@ -441,10 +436,6 @@ void pairCheck() {
 
       return;
     }
-
-    // #if !LED_DISABLED
-    //     ledSetColor(0, 255, 0);  // Green = Paired state
-    // #endif
 
     should_skip = false;
   }
