@@ -504,6 +504,9 @@ void handleTime() {
 
     if (current_second >= SECONDS_PER_DAY) {
       current_second = 0;  // Reset at midnight
+
+      // Resend a request to software to retrieve next day date
+      requestStartupData();
     }
   }
 }
