@@ -244,10 +244,12 @@ void requestDisplayUpdate() {
 // if the message is being set from a menu callback function, you don't need to
 // call `goToPage()` Just return `true` in the callback function.
 void setMessage(String message, String title = "Message", unsigned long timeout = 0) {
+#if !DISPLAY_DISABLED
   if (timeout > 0) display_view_timeout = timeout;
 
   page_data.title = "msg:" + title;
   page_data.description = message;
+#endif
 }
 
 // ------------- Config memory functions ------------ //
@@ -375,6 +377,7 @@ void updateMemoryLayout(String memory_string) {
 }
 
 void updateProfiles(const char* profiles_string) {
+#if MULTIPLE_PROFILES
   if (profiles != nullptr) {
     for (int i = 0; i < profiles_count; i++) {
       delete[] profiles[i];  // Free each string
@@ -428,6 +431,7 @@ void updateProfiles(const char* profiles_string) {
 
 #if !DISPLAY_DISABLED
   updateProfilesMenu();
+#endif
 #endif
 }
 
@@ -534,6 +538,7 @@ void handleMessages() {
 
           break;
 
+#if MULTIPLE_PROFILES
         // Set `profiles`
         case 'p':  // "profile with lowercase 'p' for updating profiles"
           updateProfiles(incoming_message.value.c_str());
@@ -545,6 +550,7 @@ void handleMessages() {
           current_profile = incoming_message.value.toInt();
 
           break;
+#endif
 
         // Uploading to config memory
         case 'u':  // "upload"
@@ -1346,6 +1352,7 @@ int16_t drawWrappedString(String text, int16_t x, int16_t y, uint16_t max_width,
   return 0;
 }
 
+#if MULTIPLE_PROFILES
 void updateProfilesMenu() {
 #if !DISPLAY_DISABLED
   if (profiles_menu != nullptr) {
@@ -1370,6 +1377,7 @@ void updateProfilesMenu() {
   }
 #endif
 }
+#endif
 
 // Menu navigation functions
 
