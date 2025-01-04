@@ -30,8 +30,8 @@ U8G2_ST7920_128X64_F_SW_SPI display(U8G2_R0, DISPLAY_E_PIN, DISPLAY_RW_PIN, DISP
 Memory memory;
 
 #if MULTIPLE_PROFILES
-// TODO: Remove test profiles
-String profiles[] = { "Internal", "Profile 1", "Profile 2", "Profile 3" };
+char** profiles = nullptr;
+uint8_t profiles_count = 0;
 uint8_t current_profile = 0;
 #endif
 
@@ -141,8 +141,10 @@ void setup() {
   // Load configuration from flash
   loadMemory();
 
-  // Load internal profiles on startup
-  updateProfilesMenu();
+#if MULTIPLE_PROFILES
+  // Add device's internal profile
+  updateProfiles("");
+#endif
 
 #if MULTI_CORE_OPERATIONS
   multicore_launch_core1(core1_entry);
@@ -372,6 +374,63 @@ void updateMemoryLayout(String memory_string) {
   }
 }
 
+void updateProfiles(const char* profiles_string) {
+  if (profiles != nullptr) {
+    for (int i = 0; i < profiles_count; i++) {
+      delete[] profiles[i];  // Free each string
+    }
+
+    delete[] profiles;  // Free the array
+  }
+
+  // Always add device's internal profile
+  profiles_count = 1;
+  profiles = new char*[1];
+  profiles[0] = new char[strlen(INTERNAL_PROFILE_NAME) + 1];
+  strcpy(profiles[0], INTERNAL_PROFILE_NAME);
+
+  if (strlen(profiles_string) == 0) {
+    current_profile = 0;
+
+    return;
+  }
+
+  // Parse the `profiles_string` and add each member
+  const char* start = profiles_string;
+  const char* end = strchr(start, MESSAGE_SEP_INNER[0]);  // Find the first `MESSAGE_SEP_INNER` char
+                                                          // `MESSAGE_SEP_INNER` isn't a `char` hence the [0]
+
+  while (end != nullptr) {
+    profiles_count++;
+    profiles = (char**)realloc(profiles, profiles_count * sizeof(char*));
+
+    int length = end - start;
+    int current_index = profiles_count - 1;
+
+    profiles[current_index] = new char[length + 1];
+    strncpy(profiles[current_index], start, length);
+    profiles[current_index][length] = '\0';
+
+    start = end + 1;
+    end = strchr(start, MESSAGE_SEP_INNER[0]);  // Find the next `MESSAGE_SEP_INNER` char
+  }
+
+  // Add the last part after the final `MESSAGE_SEP_INNER` char
+  if (*start != '\0') {
+    profiles_count++;
+    profiles = (char**)realloc(profiles, profiles_count * sizeof(char*));
+
+    int current_index = profiles_count - 1;
+
+    profiles[current_index] = new char[strlen(start) + 1];
+    strcpy(profiles[current_index], start);
+  }
+
+#if !DISPLAY_DISABLED
+  updateProfilesMenu();
+#endif
+}
+
 void pair() {
   serialSend("PAIRED", "Firmware and device are now connected!");
 
@@ -388,7 +447,7 @@ void unpair() {
   paired = false;
   current_second = -1;
   current_date = "";
-  current_profile = 0;
+  updateProfiles("");  // Reset profiles
 
 #if !LED_DISABLED
   rgb.flash(3, Color(255, 0, 0), 75);
@@ -402,8 +461,8 @@ void pairCheck() {
     if (Serial.available()) {
       char c = Serial.read();
 
-      if (c == '\n') {  // Messages should end with a newline ('\n')
-        if (buffer == "p1") {
+      if (c == '\n') {         // Messages should end with a newline ('\n')
+        if (buffer == "c1") {  // `c` => Connection, `1` => true
           pair();
 
           should_skip = true;
@@ -463,15 +522,27 @@ void handleMessages() {
       };
 
       switch (incoming_message.key) {
-        // Set current_second
+        // Set `current_second`
         case 't':  // "time"
           current_second = incoming_message.value.toInt();
 
           break;
 
-        // Set current_date
+        // Set `current_date`
         case 'd':  // "date"
           current_date = incoming_message.value;
+
+          break;
+
+        // Set `profiles`
+        case 'p':  // "profile with lowercase 'p' for updating profiles"
+          updateProfiles(incoming_message.value.c_str());
+
+          break;
+
+        // Set `current_profile`
+        case 'P':  // "profile with uppercase 'P' for selected profile"
+          current_profile = incoming_message.value.toInt();
 
           break;
 
@@ -522,6 +593,10 @@ void handleLED() {
 
 void handleButtons() {
   if (!memory.keyboard_enabled) return;
+
+  // Button presses/releases are sent to software no matter what,
+  // but keyboard emulation only works if the current_profile is `0`
+  // meaning the device's internal profile is selected.
 
   static unsigned long buttonTimer = 0;
 
@@ -1277,7 +1352,6 @@ void updateProfilesMenu() {
     delete[] profiles_menu;
   }
 
-  int profiles_count = ARRAY_SIZE(profiles);
   profiles_menu = new MenuItem[profiles_count];
 
   auto callback = []() -> bool {
@@ -1291,7 +1365,7 @@ void updateProfilesMenu() {
   };
 
   for (int i = 0; i < profiles_count; i++) {
-    profiles_menu[i].title = profiles[i].c_str();
+    profiles_menu[i].title = profiles[i];
     profiles_menu[i].callback = callback;
   }
 #endif
@@ -1357,6 +1431,7 @@ void goToMainMenu() {
 
 void goToProfiles() {
 #if !DISPLAY_DISABLED
+#if MULTIPLE_PROFILES
   if (current_view != VIEW_HOME) return;
 
   if (!paired) {
@@ -1365,7 +1440,8 @@ void goToProfiles() {
     return;
   }
 
-  goToMenu(profiles_menu, ARRAY_SIZE(profiles), current_profile);
+  goToMenu(profiles_menu, profiles_count, current_profile);
+#endif
 #endif
 }
 

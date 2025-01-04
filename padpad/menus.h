@@ -1,6 +1,5 @@
 #pragma once
 
-#include "config.h"
 #if !DISPLAY_DISABLED
 // Forward declaration
 bool menuSelectBack();

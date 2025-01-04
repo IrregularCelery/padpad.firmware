@@ -54,6 +54,11 @@
 
 #define MULTIPLE_PROFILES true
 
+#if MULTIPLE_PROFILES
+#define INTERNAL_PROFILE_NAME "Internal"  // Device's internal profile \
+                                           // for when it's not paired yet
+#endif
+
 /*--------------------------- Buttons settings ---------------------------*/
 
 struct Layout {
