@@ -288,6 +288,9 @@ Memory default_memory = {
 // If you want to change these settings, make sure to set the same in the
 // software as well. otherwise the connection would fail!
 #define BAUD_RATE 38400
+
+// NOTE: THESE CHARACTERS ARE FOR INTERNAL USAGE! PLEASE DON'T USE THEM
+// IN YOUR MESSAGES! `FORBIDDEN_CHARACTERS`
 #define MESSAGE_SEP ":"
 #define MESSAGE_END ";"
 #define MESSAGE_SEP_INNER "|"
