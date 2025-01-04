@@ -509,7 +509,7 @@ void pairCheck() {
 }
 
 void requestStartupData() {
-  serialSend("REQUEST", "STARTUP");
+  serialRequest("STARTUP");
 }
 
 void handleMessages() {

@@ -15,6 +15,10 @@ void serialError(String message) {
   serialSend("ERROR", message);
 }
 
+void serialRequest(String message) {
+  serialSend("REQUEST", message);
+}
+
 // Button states: 0 => RELEASE, 1 => PRESSED, 2 => HOLD (HOLD not implemented)
 void serialSendButton(byte id, bool modkey, byte state) {
   String modkey_state = "m";
