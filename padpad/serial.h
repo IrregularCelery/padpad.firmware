@@ -21,7 +21,8 @@ void serialError(String message) {
 
 // Avoid using `FORBIDDEN_CHARACTERS` in your messages!
 // Check out `FORBIDDEN_CHARACTERS` in `config.h` file
-void serialRequest(String key, String value) {
+// For requesting software to change something, such as settings
+void serialRequest(String key, String value = "") {
   serialSend("REQUEST", key + MESSAGE_SEP_INNER + value);
 }
 

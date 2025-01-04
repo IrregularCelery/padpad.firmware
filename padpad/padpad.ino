@@ -1368,6 +1368,8 @@ void updateProfilesMenu() {
 
     current_profile = index;
 
+    serialRequest("profile", (String)current_profile);
+
     return false;
   };
 
