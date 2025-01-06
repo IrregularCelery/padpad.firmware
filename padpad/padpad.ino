@@ -636,10 +636,14 @@ void handleButtons() {
           modkey = true;
         else
 #endif
-          Keyboard.press(key);
+        {
+          if (current_profile == 0) {
+            Keyboard.press(key);
+          }
 
-        if (paired)
-          serialSendButton(map_id, modkey, 1);
+          if (paired)
+            serialSendButton(map_id, modkey, 1);
+        }
 
         break;
 
@@ -651,15 +655,18 @@ void handleButtons() {
         else
 #endif
         {
-          Keyboard.release(key);
+          if (current_profile == 0) {
 
-          // There was a bug that if release the button before the modkey,
-          // because the modkey is still enabled, the `key` would change
-          // to `mod` and thus wouldn't be released here.
-          Keyboard.release(key_orig);
+            Keyboard.release(key);
+
+            // There was a bug that if release the button before the modkey,
+            // because the modkey is still enabled, the `key` would change
+            // to `mod` and thus wouldn't be released here.
+            Keyboard.release(key_orig);
+          }
         }
 
-        if (mod > 0)
+        if (mod > 0 && current_profile == 0)
           Keyboard.release(mod);
 
         if (paired)
