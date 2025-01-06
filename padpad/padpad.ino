@@ -526,6 +526,21 @@ void handleMessages() {
       };
 
       switch (incoming_message.key) {
+        // Handle software's requests
+        case 'i':  // "internal"
+          if (incoming_message.value == "data") {
+            // Send memory-saved-layout of `buttons`
+            serialSend("DATA", buttonsToString());
+
+#if !POTENTIOMETERS_DISABLED
+            serialSend("DATA", potentiometersToString());
+#endif
+
+            break;
+          }
+
+          break;
+
         // Set `current_second`
         case 't':  // "time"
           current_second = incoming_message.value.toInt();
@@ -1617,5 +1632,54 @@ bool menuSelectDefaultMemory() {
   defaultMemory();
 
   return true;
+}
+#endif
+
+// Returned format: 1|97|98|2|99|100|3|101|102|4|103|104|5|105|106|...
+// separated by groups of three like "1|97|98"
+// 1,2,3... = button id in keymap (Started from 1)
+// 97|98 => 97 = letter 'a' normal, b = letter 'b' modkey
+// letters are in ascii number. e.g. 97 = a
+String buttonsToString() {
+  String buttons_string = "b";  // `b` => Buttons
+
+  uint8_t buttons_count = ARRAY_SIZE(memory.buttons_layout);
+
+  for (uint8_t i = 0; i < buttons_count; i++) {
+    // Button ID
+    buttons_string += (String)(i + 1);
+    buttons_string += MESSAGE_SEP_INNER;
+
+    // Normal key
+    buttons_string += (String)memory.buttons_layout[i].key;
+    buttons_string += MESSAGE_SEP_INNER;
+
+    // Mod key
+    buttons_string += (String)memory.buttons_layout[i].mod;
+    if (i < buttons_count - 1) buttons_string += MESSAGE_SEP_INNER;
+  }
+
+  return buttons_string;
+}
+
+#if !POTENTIOMETERS_DISABLED
+// Returned format: 1|25|2|45|3|12|4|99|5|75|...
+// separated by groups of two like "1|25"
+// 1,2,3... = potentiometer id (Started from 1)
+// 25 => value of the potentiometer
+String potentiometersToString() {
+  String potentiometers_string = "p";  // `p` => Potentiometers
+
+  for (uint8_t i = 0; i < potentiometers_count; i++) {
+    // Potentiometer ID
+    potentiometers_string += (String)(i + 1);
+    potentiometers_string += MESSAGE_SEP_INNER;
+
+    // Potentiometer value
+    potentiometers_string += (String)potentiometer_values[i];
+    if (i < potentiometers_count - 1) potentiometers_string += MESSAGE_SEP_INNER;
+  }
+
+  return potentiometers_string;
 }
 #endif
