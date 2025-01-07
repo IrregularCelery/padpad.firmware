@@ -62,6 +62,9 @@ Menu current_menu = {
 };
 PageData page_data;
 
+// TODO: Move this to memory
+String home_page_title = "PadPad";  // Max 10 chars
+
 unsigned long display_view_timeout = DISPLAY_DEFAULT_VIEW_TIMEOUT;
 
 int8_t menu_arrow_state = 0;  // -1 = up, 1 = down, 0 = none
@@ -998,7 +1001,7 @@ void drawViews() {
 #endif
 }
 
-void drawStatusPanel() {
+int16_t drawStatusPanel() {
 #if !DISPLAY_DISABLED
   display.setBitmapMode(1);
   display.setDrawColor(1);
@@ -1012,15 +1015,17 @@ void drawStatusPanel() {
   int16_t bar_x = DISPLAY_WIDTH - bar_width;
   int16_t bar_y = 0;
 
+  int16_t line_padding = 1;
+
   int16_t icon_x = MINI_ICON_WIDTH + 1;  // Should be multiplied by position.
                                          // e.g. (2 * icon_x), first one is 0
   int16_t icon_y = DISPLAY_PADDING / 2;
 
   // Bar line
-  display.drawHLine(bar_x, bar_height, bar_width);
+  display.drawHLine(bar_x + line_padding, bar_height, bar_width - (line_padding * 2));
 
   // Vertical separator line
-  display.drawVLine(bar_x - 1, 0, DISPLAY_HEIGHT);
+  display.drawVLine(bar_x - 1, line_padding, DISPLAY_HEIGHT - (line_padding * 2));
 
   // Icons
 
@@ -1119,13 +1124,65 @@ void drawStatusPanel() {
 
   display.setFont(DISPLAY_DEFAULT_FONT);
 
+  // Display current profile name
+
+  const char* current_profile_name = profiles[current_profile];  // Max 10 chars
+
+  display.setFont(u8g2_font_spleen5x8_mr);
+
+  int16_t current_profile_name_width = display.getStrWidth(current_profile_name);
+  int16_t current_profile_name_height = display.getMaxCharHeight();
+
+  display.drawRBox(bar_x + ((DISPLAY_WIDTH - bar_x) / 2)
+                     - (current_profile_name_width / 2) - (DISPLAY_PADDING / 2) + 1,
+                   DISPLAY_HEIGHT - (DISPLAY_PADDING / 2) - current_profile_name_height,
+                   current_profile_name_width + DISPLAY_PADDING - 1,
+                   current_profile_name_height,
+                   2);
+
+  display.setDrawColor(0);
+  display.drawStr(bar_x + ((DISPLAY_WIDTH - bar_x) / 2) - (current_profile_name_width / 2) + 1,
+                  DISPLAY_HEIGHT - (DISPLAY_PADDING / 2) - 1, current_profile_name);
+  display.setDrawColor(1);
+
+  // Border
+  display.drawRFrame(bar_x + ((DISPLAY_WIDTH - bar_x) / 2)
+                       - (current_profile_name_width / 2) - (DISPLAY_PADDING / 2) + 1,
+                     DISPLAY_HEIGHT - (DISPLAY_PADDING / 2) - current_profile_name_height,
+                     current_profile_name_width + DISPLAY_PADDING - 1,
+                     current_profile_name_height,
+                     2);
+
+  display.setFont(DISPLAY_DEFAULT_FONT);
+
+  // Return end position of `StatusPanel` from right (start x)
+  return bar_x - 1;
+#endif
+}
+
+void drawUserPanel(int16_t max_width) {
+#if !DISPLAY_DISABLED
+  display.drawXBMP((max_width / 2) - (HOME_IMAGE_WIDTH / 2),
+                   DISPLAY_PADDING + 1, HOME_IMAGE_WIDTH,
+                   HOME_IMAGE_HEIGHT, home_view_user_avatar_icon);
+
+  display.setFont(u8g2_font_t0_12b_tr);
+
+  const char* title = home_page_title.c_str();
+  int16_t title_width = display.getStrWidth(title);
+
+  display.drawStr((max_width / 2) - (title_width / 2) - 1,
+                  DISPLAY_HEIGHT - DISPLAY_PADDING - 1, title);
+
+  display.setFont(DISPLAY_DEFAULT_FONT);
 #endif
 }
 
 void drawHomeView() {
 #if !DISPLAY_DISABLED
   // Buffer clearing is handled by `drawViews()`
-  drawStatusPanel();
+  int16_t user_panel_max_width = drawStatusPanel();
+  drawUserPanel(user_panel_max_width);
   // Sending buffer is handled by `drawViews()`
 #endif
 }
