@@ -655,13 +655,16 @@ void handleButtons() {
         else
 #endif
         {
-          if (current_profile == 0) {
+          // `key` must be between 0 and 255
+          // 0   => NULL
+          // 255 => ModKey
+          if (current_profile == 0 && key > 0 && key < 255) {
             Keyboard.press(key);
           }
-
-          if (paired)
-            serialSendButton(map_id, modkey, 1);
         }
+
+        if (paired && key != 255)
+          serialSendButton(map_id, modkey, 1);
 
         break;
 
@@ -687,7 +690,7 @@ void handleButtons() {
         if (mod > 0 && current_profile == 0)
           Keyboard.release(mod);
 
-        if (paired)
+        if (paired && key != 255)
           serialSendButton(map_id, modkey, 0);
 
         break;
