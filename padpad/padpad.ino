@@ -1133,10 +1133,9 @@ int16_t drawStatusPanel() {
   int16_t current_profile_name_width = display.getStrWidth(current_profile_name);
   int16_t current_profile_name_height = display.getMaxCharHeight();
 
-  display.drawRBox(bar_x + ((DISPLAY_WIDTH - bar_x) / 2)
-                     - (current_profile_name_width / 2) - (DISPLAY_PADDING / 2) + 1,
+  display.drawRBox(bar_x + (DISPLAY_PADDING / 2),
                    DISPLAY_HEIGHT - (DISPLAY_PADDING / 2) - current_profile_name_height,
-                   current_profile_name_width + DISPLAY_PADDING - 1,
+                   DISPLAY_WIDTH - bar_x - DISPLAY_PADDING,
                    current_profile_name_height,
                    2);
 
@@ -1146,10 +1145,9 @@ int16_t drawStatusPanel() {
   display.setDrawColor(1);
 
   // Border
-  display.drawRFrame(bar_x + ((DISPLAY_WIDTH - bar_x) / 2)
-                       - (current_profile_name_width / 2) - (DISPLAY_PADDING / 2) + 1,
+  display.drawRFrame(bar_x + (DISPLAY_PADDING / 2),
                      DISPLAY_HEIGHT - (DISPLAY_PADDING / 2) - current_profile_name_height,
-                     current_profile_name_width + DISPLAY_PADDING - 1,
+                     DISPLAY_WIDTH - bar_x - DISPLAY_PADDING,
                      current_profile_name_height,
                      2);
 
