@@ -328,22 +328,22 @@ void defaultMemory() {
 // 1,2,3... = button id in keymap (Started from 1)
 // 97|98 => 97 = letter 'a' normal, b = letter 'b' modkey
 // letters are in ascii number. e.g. 97 = a
-void updateMemoryLayout(String memory_string) {
-  while (memory_string.length() > 0) {
-    int index = memory_string.indexOf(MESSAGE_END);
+void updateMemoryButtonsLayout(String buttons_layout_string) {
+  while (buttons_layout_string.length() > 0) {
+    int index = buttons_layout_string.indexOf(MESSAGE_END);
 
     if (index == -1) {
       // Couldn't find anymore `MESSAGE_END` character
-      index = memory_string.length();
+      index = buttons_layout_string.length();
     }
 
-    String current = memory_string.substring(0, index);
+    String current = buttons_layout_string.substring(0, index);
 
     int separator_position = current.indexOf(MESSAGE_SEP, 0);
 
     if (separator_position == -1) {
-      // Format of memory_string isn't correct (At least for current button)
-      serialError("Uploading to memory failed, memory_string format is incorrect!");
+      // Format of buttons_layout_string isn't correct (At least for current button)
+      serialError("Uploading to memory failed, buttons_layout_string format is incorrect!");
 
       return;
     }
@@ -354,8 +354,8 @@ void updateMemoryLayout(String memory_string) {
     int inner_separator_position = keys.indexOf(MESSAGE_SEP_INNER, 0);
 
     if (inner_separator_position == -1) {
-      // Format of memory_string isn't correct (At least for current button)
-      serialError("Uploading to memory failed, memory_string format is incorrect!");
+      // Format of buttons_layout_string isn't correct (At least for current button)
+      serialError("Uploading to memory failed, buttons_layout_string format is incorrect!");
 
       return;
     }
@@ -368,15 +368,41 @@ void updateMemoryLayout(String memory_string) {
     memory.buttons_layout[number - 1].key = normal_letter;
     memory.buttons_layout[number - 1].mod = modkey_letter;
 
-    if (index == memory_string.length()) {
+    if (index == buttons_layout_string.length()) {
       // Last index
       serialError("Last index");
 
       break;
     }
 
-    memory_string = memory_string.substring(index + 1);
+    buttons_layout_string = buttons_layout_string.substring(index + 1);
   }
+}
+
+void updateMemoryHomeImage(String home_image_string) {
+  if (home_image_string.length() == 0) {
+    delete[] memory.home_image;
+
+    memory.home_image = nullptr;
+
+    return;
+  }
+
+  uint8_t icon[DISPLAY_HOME_IMAGE_SIZE];
+
+  // Parse serialized icon bytes
+  for (size_t i = 0; i < DISPLAY_HOME_IMAGE_SIZE; i++) {
+    char hex[3] = { home_image_string[i * 2], home_image_string[i * 2 + 1], '\0' };  // Grab 2 characters
+
+    icon[i] = (uint8_t)strtol(hex, NULL, 16);  // Convert to hex
+  }
+
+  delete[] memory.home_image;
+
+  memory.home_image = new uint8_t[DISPLAY_HOME_IMAGE_SIZE];
+
+  // Copy new data into the array
+  memcpy(memory.home_image, icon, DISPLAY_HOME_IMAGE_SIZE);
 }
 
 void updateProfiles(const char* profiles_string) {
@@ -531,6 +557,7 @@ void handleMessages() {
       switch (incoming_message.key) {
         // Handle software's requests
         case 'i':  // "internal"
+          // Software is asking for internal data
           if (incoming_message.value == "data") {
             // Send memory-saved-layout of `buttons`
             serialSend("DATA", buttonsToString());
@@ -541,8 +568,6 @@ void handleMessages() {
 
             break;
           }
-
-          break;
 
         // Set `current_second`
         case 't':  // "time"
@@ -572,11 +597,32 @@ void handleMessages() {
 
         // Uploading to config memory
         case 'u':  // "upload"
-          updateMemoryLayout(incoming_message.value);
+          {
+            byte sub_key = incoming_message.value.charAt(0);
+            String value = incoming_message.value.substring(1);
 
-          // TODO: Handle this by a different incoming_message
-          // Upload to flash
-          saveMemory();
+            switch (sub_key) {
+              // Change `buttons_layout`
+              case 'b':  // "buttons"
+                updateMemoryButtonsLayout(value);
+
+                break;
+
+              // Change `home_image`
+              case 'i':  // "image"
+                updateMemoryHomeImage(value);
+
+                break;
+            }
+
+            break;
+          }
+
+        // Save current config memory
+        case 'm':  // "memory"
+          if (incoming_message.value == "1") {
+            saveMemory();
+          }
 
           break;
       }
@@ -1163,9 +1209,17 @@ int16_t drawStatusPanel() {
 
 void drawUserPanel(int16_t max_width) {
 #if !DISPLAY_DISABLED
+  // Draw home image
+
+  const uint8_t* image = home_view_user_avatar_icon;
+
+  if (memory.home_image != nullptr) {
+    image = memory.home_image;
+  }
+
   display.drawXBMP((max_width / 2) - (HOME_IMAGE_WIDTH / 2),
                    DISPLAY_PADDING + 1, HOME_IMAGE_WIDTH,
-                   HOME_IMAGE_HEIGHT, home_view_user_avatar_icon);
+                   HOME_IMAGE_HEIGHT, image);
 
   display.setFont(u8g2_font_t0_12b_tr);
 

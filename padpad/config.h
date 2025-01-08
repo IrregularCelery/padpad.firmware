@@ -207,6 +207,9 @@ struct PageData {
 #define DISPLAY_HEIGHT 64
 #define DISPLAY_PADDING 4
 
+// `((x + (y - 1)) / y)` is basically `ceil()` function
+#define DISPLAY_HOME_IMAGE_SIZE ((HOME_IMAGE_WIDTH + (8 - 1)) / 8) * HOME_IMAGE_HEIGHT
+
 #define DISPLAY_DEFAULT_FONT u8g2_font_6x10_tr
 #define DISPLAY_CONFIRM_BUTTON_TEXT "OK"
 #define DISPLAY_TRUE_BUTTON_TEXT "Enable"
@@ -237,6 +240,10 @@ struct Memory {
 #if !JOYSTICK_DISABLED
   bool joystick_mouse_enabled;
   float joystick_sensitivity;
+#endif
+
+#if !DISPLAY_DISABLED
+  uint8_t* home_image;
 #endif
 };
 
@@ -280,6 +287,10 @@ Memory default_memory = {
 #if !JOYSTICK_DISABLED
   .joystick_mouse_enabled = true,
   .joystick_sensitivity = 0.5f,
+#endif
+
+#if !DISPLAY_DISABLED
+  .home_image = nullptr,
 #endif
 };
 
