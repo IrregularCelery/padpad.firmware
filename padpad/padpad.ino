@@ -381,9 +381,7 @@ void updateMemoryButtonsLayout(String buttons_layout_string) {
 
 void updateMemoryHomeImage(String home_image_string) {
   if (home_image_string.length() == 0) {
-    delete[] memory.home_image;
-
-    memory.home_image = nullptr;
+    memory.home_image_state = false;
 
     return;
   }
@@ -397,12 +395,10 @@ void updateMemoryHomeImage(String home_image_string) {
     icon[i] = (uint8_t)strtol(hex, NULL, 16);  // Convert to hex
   }
 
-  delete[] memory.home_image;
-
-  memory.home_image = new uint8_t[DISPLAY_HOME_IMAGE_SIZE];
-
   // Copy new data into the array
   memcpy(memory.home_image, icon, DISPLAY_HOME_IMAGE_SIZE);
+
+  memory.home_image_state = true;
 }
 
 void updateProfiles(const char* profiles_string) {
@@ -1213,7 +1209,7 @@ void drawUserPanel(int16_t max_width) {
 
   const uint8_t* image = home_view_user_avatar_icon;
 
-  if (memory.home_image != nullptr) {
+  if (memory.home_image_state) {
     image = memory.home_image;
   }
 

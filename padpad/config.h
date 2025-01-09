@@ -243,7 +243,8 @@ struct Memory {
 #endif
 
 #if !DISPLAY_DISABLED
-  uint8_t* home_image;
+  uint8_t home_image[DISPLAY_HOME_IMAGE_SIZE];
+  bool home_image_state;  // Flag to indicate if the image is set
 #endif
 };
 
@@ -290,7 +291,8 @@ Memory default_memory = {
 #endif
 
 #if !DISPLAY_DISABLED
-  .home_image = nullptr,
+  .home_image = { 0 },
+  .home_image_state = false,
 #endif
 };
 
