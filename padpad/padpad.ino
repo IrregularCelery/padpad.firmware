@@ -420,6 +420,10 @@ void updateProfiles(const char* profiles_string) {
   if (strlen(profiles_string) == 0) {
     current_profile = 0;
 
+#if !DISPLAY_DISABLED
+    updateProfilesMenu();
+#endif
+
     return;
   }
 
@@ -1188,13 +1192,6 @@ int16_t drawStatusPanel() {
   display.drawStr(bar_x + ((DISPLAY_WIDTH - bar_x) / 2) - (current_profile_name_width / 2) + 1,
                   DISPLAY_HEIGHT - (DISPLAY_PADDING / 2) - 1, current_profile_name);
   display.setDrawColor(1);
-
-  // Border
-  display.drawRFrame(bar_x + (DISPLAY_PADDING / 2),
-                     DISPLAY_HEIGHT - (DISPLAY_PADDING / 2) - current_profile_name_height,
-                     DISPLAY_WIDTH - bar_x - DISPLAY_PADDING,
-                     current_profile_name_height,
-                     2);
 
   display.setFont(DISPLAY_DEFAULT_FONT);
 
