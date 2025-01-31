@@ -365,8 +365,10 @@ void updateMemoryButtonsLayout(String buttons_layout_string) {
 
     // Button indecies in keymap start from 1 but in buttons_layout,
     // they start from 0. Hence the "number - 1"
-    memory.buttons_layout[number - 1].key = normal_letter;
-    memory.buttons_layout[number - 1].mod = modkey_letter;
+    if (number > 0 && number <= ARRAY_SIZE(memory.buttons_layout)) {
+      memory.buttons_layout[number - 1].key = normal_letter;
+      memory.buttons_layout[number - 1].mod = modkey_letter;
+    }
 
     if (index == buttons_layout_string.length()) {
       // Last index
