@@ -1112,18 +1112,36 @@ int16_t drawStatusPanel() {
     display.setDrawColor(1);
   }
 
-#if !JOYSTICK_DISABLED
+#if !POTENTIOMETERS_DISABLED
   display.drawXBMP(bar_x + DISPLAY_PADDING + (2 * icon_x),
                    icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
-                   mouse_mini_icon);
+                   potentiometer_mini_icon);
 
   // Disabled overlay icon
-  if (!memory.joystick_mouse_enabled) {
+  if (!memory.potentiometers_enabled) {
     display.drawXBMP(bar_x + DISPLAY_PADDING + (2 * icon_x),
                      icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
                      not_mini_icon);
     display.setDrawColor(0);
     display.drawXBMP(bar_x + DISPLAY_PADDING + (2 * icon_x),
+                     icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                     not_shadow_mini_icon);
+    display.setDrawColor(1);
+  }
+#endif
+
+#if !JOYSTICK_DISABLED
+  display.drawXBMP(bar_x + DISPLAY_PADDING + (3 * icon_x),
+                   icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                   mouse_mini_icon);
+
+  // Disabled overlay icon
+  if (!memory.joystick_mouse_enabled) {
+    display.drawXBMP(bar_x + DISPLAY_PADDING + (3 * icon_x),
+                     icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
+                     not_mini_icon);
+    display.setDrawColor(0);
+    display.drawXBMP(bar_x + DISPLAY_PADDING + (3 * icon_x),
                      icon_y, MINI_ICON_WIDTH, MINI_ICON_HEIGHT,
                      not_shadow_mini_icon);
     display.setDrawColor(1);
