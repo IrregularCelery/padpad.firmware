@@ -561,6 +561,8 @@ void handleMessages() {
         case 'i':  // "internal"
           // Software is asking for internal data
           if (incoming_message.value == "data") {
+            serialSend("DATA", "v" + (String)DEVICE_FIRMWARE_VERSION);
+
             // Send memory-saved-layout of `buttons`
             serialSend("DATA", buttonsToString());
 

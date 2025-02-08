@@ -4,6 +4,7 @@
 
 #define DEVICE_NAME "PadPad"
 #define DEVICE_MANUFACTURER "Irregular Celery"
+#define DEVICE_FIRMWARE_VERSION "1.0.0"
 
 #define PAIR_CHECK_INTERVAL 1000  // Interval of retrying (is ms)
 
