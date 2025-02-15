@@ -198,6 +198,10 @@ Example button layout stored in memory:
 - The second character, `mod`, represents the key pressed when the button is activated _while_ the `ModKey` is held.
 - `255` and `0` are reserved (e.g., `255` for `ModKey`, `0` for no action).
 
+#### What is a ModKey?
+
+A ModKey (Modifier Key) is a special type of key that, when held down, modifies the behavior of other buttons. You can think of it like the Shift, Ctrl, or Alt keys on a regular keyboard. Instead of performing an action on its own, it works together with other buttons to trigger different inputs.
+
 ### Serial Communication
 
 Default communication format:
